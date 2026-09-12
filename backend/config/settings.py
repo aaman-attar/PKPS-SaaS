@@ -79,7 +79,7 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 # Database Configuration
 DATABASE_URL = os.getenv('DATABASE_URL')
-USE_SQLITE = os.getenv('USE_SQLITE', 'True').lower() in ('true', '1', 't')
+USE_MYSQL = os.getenv('USE_MYSQL', 'False').lower() in ('true', '1', 't')
 
 if DATABASE_URL:
     try:
@@ -95,48 +95,50 @@ if DATABASE_URL:
             )
         }
     except Exception as e:
-        USE_SQLITE = True
+        DATABASE_URL = None
 
+if not DATABASE_URL:
+    if USE_MYSQL and os.getenv('DB_HOST'):
+        db_name = os.getenv('DB_NAME', 'pkps_db')
+        db_user = os.getenv('DB_USER', 'root')
+        db_pass = os.getenv('DB_PASSWORD', '')
+        db_host = os.getenv('DB_HOST', 'localhost')
+        db_port = int(os.getenv('DB_PORT', '3306'))
 
-if not DATABASE_URL and USE_SQLITE:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
+        # Auto-create MySQL database if it doesn't exist
+        try:
+            import MySQLdb
+            _conn = MySQLdb.connect(host=db_host, user=db_user, passwd=db_pass, port=db_port)
+            _cursor = _conn.cursor()
+            _cursor.execute(f"CREATE DATABASE IF NOT EXISTS `{db_name}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;")
+            _cursor.close()
+            _conn.close()
+        except Exception:
+            pass
+
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.mysql',
+                'NAME': db_name,
+                'USER': db_user,
+                'PASSWORD': db_pass,
+                'HOST': db_host,
+                'PORT': str(db_port),
+                'OPTIONS': {
+                    'charset': 'utf8mb4',
+                    'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+                },
+            }
         }
-    }
-elif not DATABASE_URL:
-    db_name = os.getenv('DB_NAME', 'pkps_db')
-    db_user = os.getenv('DB_USER', 'root')
-    db_pass = os.getenv('DB_PASSWORD', '')
-    db_host = os.getenv('DB_HOST', 'localhost')
-    db_port = int(os.getenv('DB_PORT', '3306'))
-
-    # Auto-create MySQL database if it doesn't exist
-    try:
-        import MySQLdb
-        _conn = MySQLdb.connect(host=db_host, user=db_user, passwd=db_pass, port=db_port)
-        _cursor = _conn.cursor()
-        _cursor.execute(f"CREATE DATABASE IF NOT EXISTS `{db_name}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;")
-        _cursor.close()
-        _conn.close()
-    except Exception:
-        pass
-
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.mysql',
-            'NAME': db_name,
-            'USER': db_user,
-            'PASSWORD': db_pass,
-            'HOST': db_host,
-            'PORT': str(db_port),
-            'OPTIONS': {
-                'charset': 'utf8mb4',
-                'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
-            },
+    else:
+        # Default safe fallback: SQLite (prevents build failure on Render if DATABASE_URL is missing)
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': BASE_DIR / 'db.sqlite3',
+            }
         }
-    }
+
 
 AUTH_USER_MODEL = 'accounts.User'
 

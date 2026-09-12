@@ -12,8 +12,6 @@ services:
         generateValue: true
       - key: DEBUG
         value: "False"
-      - key: USE_SQLITE
-        value: "False"
       - key: DATABASE_URL
         sync: false
       - key: PYTHON_VERSION
