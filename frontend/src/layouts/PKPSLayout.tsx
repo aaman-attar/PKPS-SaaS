@@ -1,15 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { 
   Building, Users, CreditCard, Landmark, PiggyBank, BookOpen, 
-  ShieldCheck, LogOut, LayoutDashboard, FileText
+  ShieldCheck, LogOut, LayoutDashboard, PanelLeftClose, PanelLeftOpen
 } from 'lucide-react';
 
 export const PKPSLayout: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -29,12 +30,19 @@ export const PKPSLayout: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
       {/* Top Navbar */}
-      <header className="h-16 bg-slate-900 border-b border-slate-800 px-6 flex items-center justify-between">
+      <header className="h-16 bg-slate-900 border-b border-slate-800 px-6 flex items-center justify-between z-20">
         <div className="flex items-center space-x-3">
+          <button
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="p-2 rounded-xl bg-slate-800 text-slate-400 hover:text-emerald-400 hover:bg-slate-700 transition"
+            title={isCollapsed ? "Expand Sidebar" : "Collapse Sidebar"}
+          >
+            {isCollapsed ? <PanelLeftOpen className="w-5 h-5" /> : <PanelLeftClose className="w-5 h-5" />}
+          </button>
           <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-500 flex items-center justify-center font-bold text-white shadow-lg shadow-emerald-500/20">
             <Building className="w-6 h-6" />
           </div>
-          <div>
+          <div className="hidden sm:block">
             <h1 className="font-bold text-lg text-emerald-400">
               {user?.tenant?.name || 'PKPS Management System'}
             </h1>
@@ -58,9 +66,13 @@ export const PKPSLayout: React.FC = () => {
       </header>
 
       {/* Main Container */}
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden relative">
         {/* Sidebar */}
-        <aside className="w-64 bg-slate-900/50 border-r border-slate-800 p-4 flex flex-col justify-between">
+        <aside
+          className={`${
+            isCollapsed ? 'w-20' : 'w-64'
+          } bg-slate-900/80 backdrop-blur-md border-r border-slate-800 p-4 flex flex-col justify-between transition-all duration-300 ease-in-out shrink-0`}
+        >
           <nav className="space-y-1">
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -69,23 +81,26 @@ export const PKPSLayout: React.FC = () => {
                 <Link
                   key={item.path}
                   to={item.path}
+                  title={isCollapsed ? item.label : undefined}
                   className={`flex items-center space-x-3 px-4 py-3 rounded-xl font-medium transition ${
                     active
                       ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/30'
                       : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
                   }`}
                 >
-                  <Icon className="w-5 h-5" />
-                  <span>{item.label}</span>
+                  <Icon className="w-5 h-5 shrink-0" />
+                  {!isCollapsed && <span className="truncate">{item.label}</span>}
                 </Link>
               );
             })}
           </nav>
 
-          <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-400 space-y-1">
-            <div className="font-semibold text-slate-300">{user?.tenant?.village || 'Mandya'} Branch</div>
-            <div className="text-slate-500">Tenant ID: {user?.tenant?.code}</div>
-          </div>
+          {!isCollapsed && (
+            <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 text-xs text-slate-400 space-y-1 transition-opacity duration-300">
+              <div className="font-semibold text-slate-300">{user?.tenant?.village || 'Mandya'} Branch</div>
+              <div className="text-slate-500">Tenant ID: {user?.tenant?.code}</div>
+            </div>
+          )}
         </aside>
 
         {/* Dynamic Page Content */}

@@ -1,12 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { UserCheck, CreditCard, PiggyBank, Home, LogOut } from 'lucide-react';
+import { UserCheck, CreditCard, PiggyBank, Home, LogOut, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 
 export const FarmerLayout: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [isCollapsed, setIsCollapsed] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -24,6 +25,13 @@ export const FarmerLayout: React.FC = () => {
       {/* Top Mobile-Friendly Navbar */}
       <header className="bg-emerald-950 border-b border-emerald-800/50 px-6 py-4 flex items-center justify-between sticky top-0 z-50">
         <div className="flex items-center space-x-3">
+          <button
+            onClick={() => setIsCollapsed(!isCollapsed)}
+            className="p-2 rounded-xl bg-emerald-900/60 border border-emerald-700/50 text-emerald-300 hover:bg-emerald-800 transition"
+            title={isCollapsed ? "Expand Navigation" : "Collapse Navigation"}
+          >
+            {isCollapsed ? <PanelLeftOpen className="w-5 h-5" /> : <PanelLeftClose className="w-5 h-5" />}
+          </button>
           <div className="w-10 h-10 rounded-full bg-emerald-500 flex items-center justify-center font-bold text-slate-950 shadow-lg shadow-emerald-500/30">
             <UserCheck className="w-6 h-6" />
           </div>
@@ -51,9 +59,13 @@ export const FarmerLayout: React.FC = () => {
       </header>
 
       {/* Main Area */}
-      <div className="flex-1 flex flex-col md:flex-row">
+      <div className="flex-1 flex flex-col md:flex-row relative overflow-hidden">
         {/* Navigation Bar */}
-        <aside className="bg-slate-900 border-b md:border-b-0 md:border-r border-slate-800 w-full md:w-64 p-4">
+        <aside
+          className={`bg-slate-900 border-b md:border-b-0 md:border-r border-slate-800 ${
+            isCollapsed ? 'md:w-20' : 'md:w-64'
+          } w-full p-4 transition-all duration-300 ease-in-out shrink-0`}
+        >
           <nav className="flex md:flex-col space-x-2 md:space-x-0 md:space-y-2 overflow-x-auto">
             {navItems.map((item) => {
               const Icon = item.icon;
@@ -62,14 +74,15 @@ export const FarmerLayout: React.FC = () => {
                 <Link
                   key={item.path}
                   to={item.path}
+                  title={isCollapsed ? item.label : undefined}
                   className={`flex items-center space-x-3 px-4 py-3 rounded-xl font-medium whitespace-nowrap transition ${
                     active
                       ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/30'
                       : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'
                   }`}
                 >
-                  <Icon className="w-5 h-5" />
-                  <span>{item.label}</span>
+                  <Icon className="w-5 h-5 shrink-0" />
+                  {!isCollapsed && <span className="truncate">{item.label}</span>}
                 </Link>
               );
             })}
