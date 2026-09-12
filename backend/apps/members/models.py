@@ -16,13 +16,32 @@ class Member(models.Model):
     
     member_number = models.CharField(max_length=50, db_index=True)
     first_name = models.CharField(max_length=100)
+    middle_name = models.CharField(max_length=100, blank=True, default='')
     last_name = models.CharField(max_length=100, blank=True, default='')
+    local_language_name = models.CharField(max_length=150, blank=True, default='')
     
     gender = models.CharField(max_length=20, choices=[('MALE', 'Male'), ('FEMALE', 'Female'), ('OTHER', 'Other')], default='MALE')
     dob = models.DateField(null=True, blank=True)
     mobile = models.CharField(max_length=20, db_index=True)
     email = models.EmailField(blank=True, default='')
+    aadhaar_number = models.CharField(max_length=20, blank=True, default='')
+    is_kyc_verified = models.BooleanField(default=False)
     
+    father_name = models.CharField(max_length=100, blank=True, default='')
+    spouse_name = models.CharField(max_length=100, blank=True, default='')
+    marital_status = models.CharField(max_length=50, blank=True, default='Single')
+    blood_group = models.CharField(max_length=10, blank=True, default='')
+    religion = models.CharField(max_length=50, blank=True, default='Hinduism')
+    caste_category = models.CharField(max_length=50, blank=True, default='OBC')
+    qualification = models.CharField(max_length=100, blank=True, default='')
+    occupation = models.CharField(max_length=100, blank=True, default='Agriculture')
+    annual_income = models.DecimalField(max_digits=12, decimal_places=2, default=0.00)
+    
+    board_resolution_no = models.CharField(max_length=50, blank=True, default='')
+    board_resolution_date = models.DateField(null=True, blank=True)
+    dccb_sb_account_no = models.CharField(max_length=50, blank=True, default='')
+    ledger_folio_no = models.CharField(max_length=50, blank=True, default='')
+
     address = models.TextField(blank=True, default='')
     village = models.CharField(max_length=100, db_index=True)
     taluk = models.CharField(max_length=100, blank=True, default='')

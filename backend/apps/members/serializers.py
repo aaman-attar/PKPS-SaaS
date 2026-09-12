@@ -33,6 +33,10 @@ class CreateMemberSerializer(serializers.ModelSerializer):
     class Meta:
         model = Member
         fields = (
-            'member_number', 'first_name', 'last_name', 'gender', 'dob',
-            'mobile', 'email', 'address', 'village', 'taluk', 'district', 'state', 'pincode', 'status'
+            'member_number', 'first_name', 'middle_name', 'last_name', 'local_language_name',
+            'gender', 'dob', 'mobile', 'email', 'aadhaar_number', 'is_kyc_verified',
+            'father_name', 'spouse_name', 'marital_status', 'blood_group', 'religion',
+            'caste_category', 'qualification', 'occupation', 'annual_income',
+            'board_resolution_no', 'board_resolution_date', 'dccb_sb_account_no', 'ledger_folio_no',
+            'address', 'village', 'taluk', 'district', 'state', 'pincode', 'status'
         )
