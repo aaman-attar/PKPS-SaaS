@@ -1,0 +1,12 @@
+{
+  "name": "pkps-saas",
+  "version": "1.0.0",
+  "description": "PKPS SaaS Full-Stack Application",
+  "private": true,
+  "scripts": {
+    "start": "node scripts/start-dev.js",
+    "dev": "node scripts/start-dev.js",
+    "backend": "cd backend && python manage.py runserver 8000",
+    "frontend": "cd frontend && npm run dev"
+  }
+}
