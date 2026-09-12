@@ -30,10 +30,9 @@ def seed():
             'is_superuser': True
         }
     )
-    if created:
-        super_admin.set_password('Admin@123')
-        super_admin.save()
-        print("  ✓ Created Super Admin user: admin / Admin@123")
+    super_admin.set_password('Admin@123')
+    super_admin.save()
+    print("  ✓ Configured Super Admin user: admin / Admin@123")
 
     # 2. PKPS Tenant
     tenant, created = Tenant.objects.get_or_create(
@@ -67,10 +66,9 @@ def seed():
             'mobile': '9876543211'
         }
     )
-    if created:
-        pkps_admin.set_password('PkpsAdmin@123')
-        pkps_admin.save()
-        print("  ✓ Created PKPS Admin: pkps_admin / PkpsAdmin@123")
+    pkps_admin.set_password('PkpsAdmin@123')
+    pkps_admin.save()
+    print("  ✓ Configured PKPS Admin: pkps_admin / PkpsAdmin@123")
 
     # 4. Loan Officer Staff
     loan_officer, created = User.objects.get_or_create(
@@ -84,10 +82,9 @@ def seed():
             'mobile': '9876543212'
         }
     )
-    if created:
-        loan_officer.set_password('Staff@123')
-        loan_officer.save()
-        print("  ✓ Created Loan Officer: loan_officer / Staff@123")
+    loan_officer.set_password('Staff@123')
+    loan_officer.save()
+    print("  ✓ Configured Loan Officer: loan_officer / Staff@123")
 
     # 5. Farmer User & Member Profile
     farmer_user, created = User.objects.get_or_create(
@@ -101,10 +98,10 @@ def seed():
             'mobile': '9876543213'
         }
     )
-    if created:
-        farmer_user.set_password('Farmer@123')
-        farmer_user.save()
-        print("  ✓ Created Farmer User: farmer_ramesh / Farmer@123")
+    farmer_user.set_password('Farmer@123')
+    farmer_user.save()
+    print("  ✓ Configured Farmer User: farmer_ramesh / Farmer@123")
+
 
     member, created = Member.objects.get_or_create(
         tenant=tenant,
