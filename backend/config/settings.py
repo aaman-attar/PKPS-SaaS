@@ -86,16 +86,34 @@ if DATABASE_URL:
         import dj_database_url
         is_aiven = 'aiven' in DATABASE_URL.lower()
         ssl_require = is_aiven or os.getenv('DB_SSL_REQUIRE', 'False').lower() in ('true', '1', 't')
-        DATABASES = {
-            'default': dj_database_url.config(
-                default=DATABASE_URL,
-                conn_max_age=600,
-                conn_health_checks=True,
-                ssl_require=ssl_require,
-            )
-        }
+
+        # Clean URL if it contains 'ssl-mode' or 'sslmode' which mysqlclient doesn't accept as keyword arg
+        cleaned_url = DATABASE_URL
+        for param in ['?ssl-mode=REQUIRED', '&ssl-mode=REQUIRED', '?sslmode=require', '&sslmode=require', '?ssl-mode=REQUIRED', '&ssl-mode=REQUIRED']:
+            cleaned_url = cleaned_url.replace(param, '')
+
+        db_config = dj_database_url.config(
+            default=cleaned_url,
+            conn_max_age=600,
+            conn_health_checks=True,
+            ssl_require=ssl_require,
+        )
+
+        # Sanitize OPTIONS dictionary for mysqlclient / MySQLdb compatibility
+        options = db_config.get('OPTIONS', {})
+        options.pop('ssl-mode', None)
+        options.pop('sslmode', None)
+
+        if 'mysql' in db_config.get('ENGINE', ''):
+            if is_aiven or ssl_require:
+                options['ssl'] = {'ssl_mode': 'REQUIRED'}
+            options['charset'] = 'utf8mb4'
+
+        db_config['OPTIONS'] = options
+        DATABASES = {'default': db_config}
     except Exception as e:
         DATABASE_URL = None
+
 
 if not DATABASE_URL:
     if USE_MYSQL and os.getenv('DB_HOST'):
