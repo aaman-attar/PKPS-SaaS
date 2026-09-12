@@ -22,7 +22,7 @@ def send_sms_otp(to_mobile: str, otp_code: str):
         else:
             clean_mobile = f"+{clean_mobile}"
 
-    message_body = f"Your PKPS SaaS Verification OTP Code is: {otp_code}. Valid for 5 minutes. Do not share this OTP with anyone."
+    message_body = f"Your OTP is: {otp_code}"
 
     if twilio_enabled and account_sid and auth_token and from_number:
         try:
