@@ -1,5 +1,5 @@
 import uuid
-import random
+import secrets
 from django.db import models
 from django.contrib.auth.models import AbstractUser, BaseUserManager
 from django.utils import timezone
@@ -66,15 +66,29 @@ class OTPDevice(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     expires_at = models.DateTimeField()
     is_verified = models.BooleanField(default=False)
+    attempts = models.IntegerField(default=0)
+    max_attempts = models.IntegerField(default=3)
 
     class Meta:
         db_table = 'otp_devices'
+        ordering = ['-created_at']
 
     @classmethod
-    def generate_otp(cls, user, validity_minutes=10):
-        code = f"{random.randint(100000, 999999)}"
+    def generate_otp(cls, user, validity_minutes=5):
+        # 1. Invalidate any existing unverified OTPs for this user
+        cls.objects.filter(user=user, is_verified=False).update(is_verified=True)
+
+        # 2. Cryptographically secure 6-digit OTP generation (secrets CSPRNG)
+        secure_code = f"{secrets.randbelow(900000) + 100000}"
         expires_at = timezone.now() + timedelta(minutes=validity_minutes)
-        return cls.objects.create(user=user, code=code, expires_at=expires_at)
+        
+        return cls.objects.create(user=user, code=secure_code, expires_at=expires_at)
 
     def is_valid(self):
-        return not self.is_verified and timezone.now() <= self.expires_at
+        return not self.is_verified and self.attempts < self.max_attempts and timezone.now() <= self.expires_at
+
+    def register_failed_attempt(self):
+        self.attempts += 1
+        if self.attempts >= self.max_attempts:
+            self.is_verified = True # Invalidate upon max failed attempts
+        self.save()

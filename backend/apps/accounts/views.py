@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import User, OTPDevice, UserRole
 from .serializers import UserSerializer, CreateUserSerializer, CustomTokenObtainPairSerializer, OTPVerifySerializer
+from .twilio_service import send_sms_otp
 from apps.tenants.permissions import IsSuperAdmin
 
 class LoginView(APIView):
@@ -24,14 +25,19 @@ class LoginView(APIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data['user']
 
-
         # Check if 2FA/MFA is required
         if user.is_mfa_enabled or user.role in [UserRole.SUPER_ADMIN, UserRole.PKPS_ADMIN, UserRole.SECRETARY, UserRole.MANAGER]:
-            otp = OTPDevice.generate_otp(user)
+            otp = OTPDevice.generate_otp(user, validity_minutes=5)
+            
+            # Send SMS via Twilio Service (or fallback to simulation)
+            sms_target = user.mobile if user.mobile else "+919876543210"
+            sms_response = send_sms_otp(sms_target, otp.code)
+
             return Response({
                 'mfa_required': True,
                 'username': user.username,
-                'message': f'OTP generated successfully. (For dev/testing code is: {otp.code})'
+                'message': sms_response['message'],
+                'expires_in_minutes': 5
             }, status=status.HTTP_200_OK)
 
         # Issue JWT tokens directly
@@ -53,17 +59,28 @@ class VerifyOTPView(APIView):
         serializer = OTPVerifySerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         username = serializer.validated_data['username']
-        otp_code = serializer.validated_data['otp_code']
+        otp_code = serializer.validated_data['otp_code'].strip()
 
         try:
             user = User.objects.get(username=username)
         except User.DoesNotExist:
             return Response({'detail': 'User not found.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        device = OTPDevice.objects.filter(user=user, code=otp_code, is_verified=False).order_by('-created_at').first()
+        # Fetch active unverified device
+        device = OTPDevice.objects.filter(user=user, is_verified=False).order_by('-created_at').first()
         if not device or not device.is_valid():
-            return Response({'detail': 'Invalid or expired OTP.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'detail': 'Invalid or expired OTP code. Please request a new OTP.'}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Check code matching
+        if device.code != otp_code:
+            device.register_failed_attempt()
+            remaining_attempts = device.max_attempts - device.attempts
+            if remaining_attempts > 0:
+                return Response({'detail': f'Invalid OTP code. {remaining_attempts} attempt(s) remaining.'}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response({'detail': 'Maximum failed OTP attempts exceeded. OTP has been invalidated.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Mark OTP as verified and single-use
         device.is_verified = True
         device.save()
 
