@@ -4,42 +4,59 @@ from django.conf import settings
 
 logger = logging.getLogger(__name__)
 
-def send_sms_otp(to_mobile: str, otp_code: str):
-    """
-    Sends a 6-digit OTP to the recipient mobile number via Twilio SMS REST API.
-    Falls back gracefully if Twilio is disabled or credentials are missing.
-    """
-    twilio_enabled = getattr(settings, 'TWILIO_ENABLED', False)
-    account_sid = getattr(settings, 'TWILIO_ACCOUNT_SID', '')
-    auth_token = getattr(settings, 'TWILIO_AUTH_TOKEN', '')
-    from_number = getattr(settings, 'TWILIO_PHONE_NUMBER', '')
-
-    # Format mobile number (ensure +91 country code prefix for India if 10 digits)
+def format_mobile_number(to_mobile: str) -> str:
     clean_mobile = to_mobile.strip().replace(' ', '').replace('-', '')
     if not clean_mobile.startswith('+'):
         if len(clean_mobile) == 10:
             clean_mobile = f"+91{clean_mobile}"
         else:
             clean_mobile = f"+{clean_mobile}"
+    return clean_mobile
 
+def send_sms_otp(to_mobile: str, otp_code: str):
+    """
+    Sends a 6-digit OTP to the recipient mobile number.
+    Uses Twilio Verify API (if TWILIO_VERIFY_SERVICE_SID is set) or Twilio Messaging REST API.
+    """
+    twilio_enabled = getattr(settings, 'TWILIO_ENABLED', False)
+    account_sid = getattr(settings, 'TWILIO_ACCOUNT_SID', '')
+    auth_token = getattr(settings, 'TWILIO_AUTH_TOKEN', '')
+    from_number = getattr(settings, 'TWILIO_PHONE_NUMBER', '')
+    verify_service_sid = getattr(settings, 'TWILIO_VERIFY_SERVICE_SID', '')
+
+    clean_mobile = format_mobile_number(to_mobile)
     message_body = f"Your OTP is: {otp_code}"
 
-    if twilio_enabled and account_sid and auth_token and from_number:
+    if twilio_enabled and account_sid and auth_token:
         try:
             from twilio.rest import Client
             client = Client(account_sid, auth_token)
-            message = client.messages.create(
-                body=message_body,
-                from_=from_number,
-                to=clean_mobile
-            )
-            logger.info(f"Twilio SMS sent successfully to {clean_mobile}. SID: {message.sid}")
-            return {
-                'success': True,
-                'provider': 'Twilio SMS',
-                'sid': message.sid,
-                'message': f'OTP sent successfully via SMS to {clean_mobile}.'
-            }
+
+            if verify_service_sid:
+                verification = client.verify.v2.services(verify_service_sid).verifications.create(
+                    to=clean_mobile,
+                    channel='sms'
+                )
+                logger.info(f"Twilio Verify SMS sent to {clean_mobile}. SID: {verification.sid}")
+                return {
+                    'success': True,
+                    'provider': 'Twilio Verify API',
+                    'sid': verification.sid,
+                    'message': f'OTP sent successfully via SMS to {clean_mobile}.'
+                }
+            elif from_number:
+                message = client.messages.create(
+                    body=message_body,
+                    from_=from_number,
+                    to=clean_mobile
+                )
+                logger.info(f"Twilio SMS sent to {clean_mobile}. SID: {message.sid}")
+                return {
+                    'success': True,
+                    'provider': 'Twilio SMS API',
+                    'sid': message.sid,
+                    'message': f'OTP sent successfully via SMS to {clean_mobile}.'
+                }
         except Exception as e:
             logger.error(f"Failed to send Twilio SMS to {clean_mobile}: {e}")
             return {
@@ -55,3 +72,27 @@ def send_sms_otp(to_mobile: str, otp_code: str):
             'provider': 'Console Simulation',
             'message': f'OTP sent successfully to {clean_mobile}.'
         }
+
+def check_twilio_verify_otp(to_mobile: str, otp_code: str):
+    """
+    Verifies an OTP code via Twilio Verify API if configured.
+    """
+    twilio_enabled = getattr(settings, 'TWILIO_ENABLED', False)
+    account_sid = getattr(settings, 'TWILIO_ACCOUNT_SID', '')
+    auth_token = getattr(settings, 'TWILIO_AUTH_TOKEN', '')
+    verify_service_sid = getattr(settings, 'TWILIO_VERIFY_SERVICE_SID', '')
+
+    if twilio_enabled and account_sid and auth_token and verify_service_sid:
+        try:
+            from twilio.rest import Client
+            clean_mobile = format_mobile_number(to_mobile)
+            client = Client(account_sid, auth_token)
+            check = client.verify.v2.services(verify_service_sid).verification_checks.create(
+                to=clean_mobile,
+                code=otp_code
+            )
+            return check.status == 'approved'
+        except Exception as e:
+            logger.error(f"Twilio Verify Check error for {to_mobile}: {e}")
+            return False
+    return False
