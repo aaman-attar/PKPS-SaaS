@@ -84,15 +84,19 @@ USE_SQLITE = os.getenv('USE_SQLITE', 'True').lower() in ('true', '1', 't')
 if DATABASE_URL:
     try:
         import dj_database_url
+        is_aiven = 'aiven' in DATABASE_URL.lower()
+        ssl_require = is_aiven or os.getenv('DB_SSL_REQUIRE', 'False').lower() in ('true', '1', 't')
         DATABASES = {
             'default': dj_database_url.config(
                 default=DATABASE_URL,
                 conn_max_age=600,
                 conn_health_checks=True,
+                ssl_require=ssl_require,
             )
         }
-    except Exception:
+    except Exception as e:
         USE_SQLITE = True
+
 
 if not DATABASE_URL and USE_SQLITE:
     DATABASES = {
