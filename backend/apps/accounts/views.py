@@ -10,9 +10,20 @@ class LoginView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
+        # Auto-seed initial data if database is empty
+        if User.objects.count() == 0:
+            try:
+                import sys, os
+                sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+                from seed_data import seed
+                seed()
+            except Exception as e:
+                print(f"Auto-seed warning: {e}")
+
         serializer = CustomTokenObtainPairSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data['user']
+
 
         # Check if 2FA/MFA is required
         if user.is_mfa_enabled or user.role in [UserRole.SUPER_ADMIN, UserRole.PKPS_ADMIN, UserRole.SECRETARY, UserRole.MANAGER]:
