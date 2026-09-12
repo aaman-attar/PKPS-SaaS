@@ -90,12 +90,15 @@ export const LoginPage: React.FC = () => {
         {!isOtpStep ? (
           <form onSubmit={handleLoginSubmit} className="space-y-5">
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Username</label>
+              <label htmlFor="login-username" className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Username</label>
               <div className="relative">
                 <UserIcon className="w-5 h-5 text-slate-500 absolute left-4 top-3.5" />
                 <input
+                  id="login-username"
+                  name="username"
                   type="text"
                   required
+                  autoComplete="username"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   placeholder="Enter username"
@@ -105,12 +108,15 @@ export const LoginPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Password</label>
+              <label htmlFor="login-password" className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">Password</label>
               <div className="relative">
                 <Lock className="w-5 h-5 text-slate-500 absolute left-4 top-3.5" />
                 <input
+                  id="login-password"
+                  name="password"
                   type="password"
                   required
+                  autoComplete="current-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="Enter password"
@@ -136,12 +142,15 @@ export const LoginPage: React.FC = () => {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">2-Factor OTP Code</label>
+              <label htmlFor="login-otpCode" className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">2-Factor OTP Code</label>
               <div className="relative">
                 <KeyRound className="w-5 h-5 text-slate-500 absolute left-4 top-3.5" />
                 <input
+                  id="login-otpCode"
+                  name="otpCode"
                   type="text"
                   required
+                  autoComplete="one-time-code"
                   maxLength={6}
                   value={otpCode}
                   onChange={(e) => setOtpCode(e.target.value)}
