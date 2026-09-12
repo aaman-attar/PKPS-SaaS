@@ -38,7 +38,7 @@ def send_sms_otp(to_mobile: str, otp_code: str):
                 'success': True,
                 'provider': 'Twilio SMS',
                 'sid': message.sid,
-                'message': f'SMS OTP sent to {clean_mobile}'
+                'message': f'OTP sent successfully via SMS to {clean_mobile}.'
             }
         except Exception as e:
             logger.error(f"Failed to send Twilio SMS to {clean_mobile}: {e}")
@@ -46,12 +46,12 @@ def send_sms_otp(to_mobile: str, otp_code: str):
                 'success': False,
                 'provider': 'Twilio SMS (Error)',
                 'error': str(e),
-                'message': f'Twilio SMS dispatch error: {e}'
+                'message': f'SMS dispatch error: {e}'
             }
     else:
-        logger.info(f"[DEV MODE / TWILIO SIMULATION] OTP for {clean_mobile}: {otp_code}")
+        logger.info(f"[DEV SIMULATION] OTP for {clean_mobile}: {otp_code}")
         return {
             'success': True,
             'provider': 'Console Simulation',
-            'message': f'OTP generated successfully. (For dev/testing code is: {otp_code})'
+            'message': f'OTP sent successfully to {clean_mobile}.'
         }
