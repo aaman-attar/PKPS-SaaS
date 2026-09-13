@@ -213,10 +213,7 @@ CORS_ALLOWED_ORIGINS = [
 ]
 CORS_ALLOW_CREDENTIALS = True
 
-# Twilio SMS Configuration
-TWILIO_ACCOUNT_SID = os.getenv('TWILIO_ACCOUNT_SID', '')
-TWILIO_AUTH_TOKEN = os.getenv('TWILIO_AUTH_TOKEN', '')
-TWILIO_PHONE_NUMBER = os.getenv('TWILIO_PHONE_NUMBER', '')
-TWILIO_VERIFY_SERVICE_SID = os.getenv('TWILIO_VERIFY_SERVICE_SID', '')
-TWILIO_ENABLED = os.getenv('TWILIO_ENABLED', 'False').lower() in ('true', '1', 't')
+# Fast2SMS Configuration (India Instant SMS Gateway)
+FAST2SMS_API_KEY = os.getenv('FAST2SMS_API_KEY', '')
+FAST2SMS_ENABLED = os.getenv('FAST2SMS_ENABLED', 'True').lower() in ('true', '1', 't')
 

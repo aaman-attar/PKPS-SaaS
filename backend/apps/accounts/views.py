@@ -4,8 +4,7 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import User, OTPDevice, UserRole
 from .serializers import UserSerializer, CreateUserSerializer, CustomTokenObtainPairSerializer, OTPVerifySerializer
-from .twilio_service import send_sms_otp
-from apps.tenants.permissions import IsSuperAdmin
+from .sms_service import send_sms_otp
 
 class LoginView(APIView):
     permission_classes = [permissions.AllowAny]
@@ -29,8 +28,8 @@ class LoginView(APIView):
         if user.is_mfa_enabled or user.role in [UserRole.SUPER_ADMIN, UserRole.PKPS_ADMIN, UserRole.SECRETARY, UserRole.MANAGER]:
             otp = OTPDevice.generate_otp(user, validity_minutes=5)
             
-            # Send SMS via Twilio Service (or fallback to simulation)
-            sms_target = user.mobile if user.mobile else "+919876543210"
+            # Send SMS via Fast2SMS Service (or fallback to simulation)
+            sms_target = user.mobile if user.mobile else "9876543210"
             sms_response = send_sms_otp(sms_target, otp.code)
 
             return Response({
@@ -52,8 +51,6 @@ class LoginView(APIView):
             'user': UserSerializer(user).data
         })
 
-from .twilio_service import send_sms_otp, check_twilio_verify_otp
-
 class VerifyOTPView(APIView):
     permission_classes = [permissions.AllowAny]
 
@@ -73,15 +70,18 @@ class VerifyOTPView(APIView):
         if not device or not device.is_valid():
             return Response({'detail': 'Invalid or expired OTP code. Please request a new OTP.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # Check code matching via Twilio Verify API or local CSPRNG OTP code
-        is_twilio_approved = check_twilio_verify_otp(user.mobile if user.mobile else "+919845403249", otp_code)
-        if not is_twilio_approved and device.code != otp_code:
+        # Check code matching
+        if device.code != otp_code:
             device.register_failed_attempt()
             remaining_attempts = device.max_attempts - device.attempts
             if remaining_attempts > 0:
                 return Response({'detail': f'Invalid OTP code. {remaining_attempts} attempt(s) remaining.'}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 return Response({'detail': 'Maximum failed OTP attempts exceeded. OTP has been invalidated.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Mark OTP as verified and single-use
+        device.is_verified = True
+        device.save()
 
         # Mark OTP as verified and single-use
         device.is_verified = True
