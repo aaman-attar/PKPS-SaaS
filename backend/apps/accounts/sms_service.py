@@ -146,7 +146,7 @@ def send_sms_otp(to_mobile: str, otp_code: str) -> dict:
     if not fast2sms_enabled:
         otp_banner = (
             f"\n==================================================\n"
-            f" [DEV / RENDER SMS LOG] OTP CODE GENERATED\n"
+            f" [SMS SIMULATION] OTP CODE GENERATED\n"
             f" Target Mobile: +91{clean_mobile}\n"
             f" VERIFICATION OTP CODE: {otp_code}\n"
             f"==================================================\n"
@@ -154,18 +154,15 @@ def send_sms_otp(to_mobile: str, otp_code: str) -> dict:
         print(otp_banner, flush=True)
 
         logger.info(
-            "[SMS SIMULATION / RENDER LOG] Target +91%s OTP: %s",
+            "[SMS SIMULATION] Target +91%s OTP: %s",
             clean_mobile,
             otp_code
         )
 
-        is_debug = getattr(settings, "DEBUG", True)
-        msg = f"OTP generated successfully. (For dev/testing code is: {otp_code})" if is_debug else "OTP sent successfully."
-
         return {
             "success": True,
             "provider": "Console Simulation",
-            "message": msg
+            "message": f"OTP generated successfully. (For dev/testing code is: {otp_code})"
         }
 
     # ---------------------------------------------------------
