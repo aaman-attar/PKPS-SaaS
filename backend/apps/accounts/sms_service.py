@@ -237,11 +237,13 @@ def send_sms_otp(to_mobile: str, otp_code: str) -> dict:
                         clean_mobile,
                         request_id,
                     )
+                    is_debug = getattr(settings, "DEBUG", True)
+                    msg = f"OTP sent successfully. (For dev/testing code is: {otp_code})" if is_debug else "OTP sent successfully."
                     return {
                         "success": True,
                         "provider": "Fast2SMS OTP",
                         "request_id": request_id,
-                        "message": "OTP sent successfully."
+                        "message": msg
                     }
                 else:
                     logger.warning("Fast2SMS OTP route returned return=False: %s", data)
@@ -282,11 +284,13 @@ def send_sms_otp(to_mobile: str, otp_code: str) -> dict:
                         clean_mobile,
                         request_id,
                     )
+                    is_debug = getattr(settings, "DEBUG", True)
+                    msg = f"OTP sent successfully via SMS. (For dev/testing code is: {otp_code})" if is_debug else "OTP sent successfully via SMS."
                     return {
                         "success": True,
                         "provider": "Fast2SMS Quick SMS",
                         "request_id": request_id,
-                        "message": "OTP sent successfully via SMS."
+                        "message": msg
                     }
                 else:
                     logger.warning("Fast2SMS Quick SMS POST returned return=False: %s", data_q)
@@ -321,11 +325,13 @@ def send_sms_otp(to_mobile: str, otp_code: str) -> dict:
                         clean_mobile,
                         request_id,
                     )
+                    is_debug = getattr(settings, "DEBUG", True)
+                    msg = f"OTP sent successfully via SMS. (For dev/testing code is: {otp_code})" if is_debug else "OTP sent successfully via SMS."
                     return {
                         "success": True,
                         "provider": "Fast2SMS Quick SMS",
                         "request_id": request_id,
-                        "message": "OTP sent successfully via SMS."
+                        "message": msg
                     }
             except ValueError:
                 pass
@@ -351,10 +357,13 @@ def send_sms_otp(to_mobile: str, otp_code: str) -> dict:
             failed_response.text[:500],
         )
 
+        is_debug = getattr(settings, "DEBUG", True)
+        dev_suffix = f" (For dev/testing code is: {otp_code})" if is_debug else ""
+
         return {
             "success": False,
             "provider": "Fast2SMS",
-            "message": f"Fast2SMS error (HTTP {failed_response.status_code}): {err_msg}"
+            "message": f"Fast2SMS error (HTTP {failed_response.status_code}): {err_msg}.{dev_suffix}"
         }
 
     # ---------------------------------------------------------
