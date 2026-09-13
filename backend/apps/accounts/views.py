@@ -29,7 +29,8 @@ class LoginView(APIView):
             otp = OTPDevice.generate_otp(user, validity_minutes=5)
             
             # Send SMS via Fast2SMS Service (or fallback to simulation)
-            sms_target = user.mobile if user.mobile else "9876543210"
+            default_mobile = getattr(settings, 'DEFAULT_TARGET_MOBILE', '9845403249')
+            sms_target = user.mobile if (user.mobile and not user.mobile.startswith('98765')) else default_mobile
             sms_response = send_sms_otp(sms_target, otp.code)
 
             return Response({

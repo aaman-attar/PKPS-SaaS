@@ -232,4 +232,6 @@ FAST2SMS_API_KEY = os.getenv('FAST2SMS_API_KEY', '').strip()
 _fast2sms_enabled_env = os.getenv('FAST2SMS_ENABLED', 'False').lower() in ('true', '1', 't')
 _invalid_keys = {'YOUR_FAST2SMS_API_KEY_HERE', 'your_actual_fast2sms_api_key_here', 'YOUR_API_KEY', ''}
 FAST2SMS_ENABLED = _fast2sms_enabled_env and (FAST2SMS_API_KEY not in _invalid_keys)
+DEFAULT_TARGET_MOBILE = os.getenv('DEFAULT_TARGET_MOBILE', '9845403249')
+
 
