@@ -4,7 +4,9 @@
 
 @layer base {
   body {
-    font-family: 'Inter', sans-serif;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background-color: #060913;
+    color: #f1f5f9;
   }
 }
 
@@ -14,25 +16,74 @@
   height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #0f172a;
+  background: #090d16;
 }
 ::-webkit-scrollbar-thumb {
-  background: #334155;
+  background: #1e293b;
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #475569;
+  background: #10b981;
 }
 
-/* Glassmorphism helpers */
-.glass-panel {
-  background: rgba(30, 41, 59, 0.7);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+/* Vibrant Glassmorphism Panels */
+.glass-card {
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
 }
 
-.glass-panel-light {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(226, 232, 240, 0.8);
+.glass-card-emerald {
+  background: rgba(6, 78, 59, 0.25);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(52, 211, 153, 0.25);
 }
+
+.glass-card-amber {
+  background: rgba(180, 83, 9, 0.25);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(251, 191, 36, 0.25);
+}
+
+.glass-card-blue {
+  background: rgba(30, 58, 138, 0.25);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(96, 165, 250, 0.25);
+}
+
+/* Glowing Border Helpers */
+.glow-emerald {
+  box-shadow: 0 0 25px -5px rgba(16, 185, 129, 0.4);
+}
+
+.glow-blue {
+  box-shadow: 0 0 25px -5px rgba(59, 130, 246, 0.4);
+}
+
+.glow-amber {
+  box-shadow: 0 0 25px -5px rgba(245, 158, 11, 0.4);
+}
+
+/* Active input glow */
+.input-vibrant {
+  background-color: rgba(9, 13, 22, 0.8);
+  border: 1px solid rgba(51, 65, 85, 0.8);
+  color: #f8fafc;
+  transition: all 0.2s ease-in-out;
+}
+
+.input-vibrant:focus {
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.25);
+  outline: none;
+}
+
+/* Mobile Touch Optimization */
+@media (max-width: 768px) {
+  button, input, select, a {
+    min-height: 44px;
+  }
+}
+
