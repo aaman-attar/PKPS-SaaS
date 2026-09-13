@@ -29,11 +29,14 @@ def seed():
             'first_name': 'SaaS',
             'last_name': 'SuperAdmin',
             'role': UserRole.SUPER_ADMIN,
+            'mobile': '9845403249',
             'is_staff': True,
             'is_superuser': True
         }
     )
     super_admin.set_password('Admin@123')
+    if not super_admin.mobile:
+        super_admin.mobile = '9845403249'
     super_admin.save()
     print("  ✓ Configured Super Admin user: admin / Admin@123")
 
