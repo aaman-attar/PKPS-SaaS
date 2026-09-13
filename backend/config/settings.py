@@ -234,4 +234,10 @@ _invalid_keys = {'YOUR_FAST2SMS_API_KEY_HERE', 'your_actual_fast2sms_api_key_her
 FAST2SMS_ENABLED = _fast2sms_enabled_env and (FAST2SMS_API_KEY not in _invalid_keys)
 DEFAULT_TARGET_MOBILE = os.getenv('DEFAULT_TARGET_MOBILE', '9845403249')
 
+if FAST2SMS_ENABLED:
+    print("📱 [SMS CONFIG] Live Fast2SMS Service ACTIVE (Sending real SMS via Fast2SMS API)")
+else:
+    print("💻 [SMS CONFIG] Fast2SMS SIMULATION MODE (FAST2SMS_ENABLED=False - OTP will display on Login Screen & Console)")
+
+
 
