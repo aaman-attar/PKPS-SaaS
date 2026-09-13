@@ -6,6 +6,7 @@ import { LoginPage } from './pages/auth/LoginPage';
 import { SuperAdminLayout } from './layouts/SuperAdminLayout';
 import { SuperAdminDashboard } from './pages/saas_admin/SuperAdminDashboard';
 import { TenantsListPage } from './pages/saas_admin/TenantsListPage';
+import { UsersListPage } from './pages/saas_admin/UsersListPage';
 
 import { PKPSLayout } from './layouts/PKPSLayout';
 import { PKPSDashboard } from './pages/pkps_admin/PKPSDashboard';
@@ -53,6 +54,7 @@ export const AppRoutes: React.FC = () => {
       >
         <Route path="dashboard" element={<SuperAdminDashboard />} />
         <Route path="tenants" element={<TenantsListPage />} />
+        <Route path="users" element={<UsersListPage />} />
         <Route index element={<Navigate to="dashboard" replace />} />
       </Route>
 
