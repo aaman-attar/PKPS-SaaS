@@ -78,8 +78,21 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 # Database Configuration
-DATABASE_URL = os.getenv('DATABASE_URL')
+USE_SQLITE = os.getenv('USE_SQLITE', 'False').lower() in ('true', '1', 't')
+DATABASE_URL = None if USE_SQLITE else os.getenv('DATABASE_URL')
 USE_MYSQL = os.getenv('USE_MYSQL', 'False').lower() in ('true', '1', 't')
+
+if DATABASE_URL:
+    try:
+        from urllib.parse import urlparse
+        import socket
+        parsed_db_url = urlparse(DATABASE_URL)
+        if parsed_db_url.hostname:
+            # Check if database host is reachable/resolvable via DNS
+            socket.gethostbyname(parsed_db_url.hostname)
+    except (socket.gaierror, socket.error, Exception) as dns_err:
+        print(f"[DB WARNING] Could not resolve database host '{DATABASE_URL.split('@')[-1]}': {dns_err}. Falling back to local database.")
+        DATABASE_URL = None
 
 if DATABASE_URL:
     try:
@@ -113,6 +126,7 @@ if DATABASE_URL:
         DATABASES = {'default': db_config}
     except Exception as e:
         DATABASE_URL = None
+
 
 
 if not DATABASE_URL:
