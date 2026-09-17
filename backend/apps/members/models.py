@@ -110,3 +110,51 @@ class MemberAsset(models.Model):
 
     class Meta:
         db_table = 'member_assets'
+
+class ApplicationStatus(models.TextChoices):
+    PENDING = 'PENDING', 'Pending Verification'
+    APPROVED = 'APPROVED', 'Approved'
+    REJECTED = 'REJECTED', 'Rejected'
+
+class MembershipApplication(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    applicant = models.ForeignKey(User, on_delete=models.CASCADE, related_name='membership_applications')
+    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name='membership_applications')
+    
+    first_name = models.CharField(max_length=100)
+    last_name = models.CharField(max_length=100, blank=True, default='')
+    father_name = models.CharField(max_length=100, blank=True, default='')
+    mobile = models.CharField(max_length=20)
+    email = models.EmailField(blank=True, default='')
+    aadhaar_number = models.CharField(max_length=20, blank=True, default='')
+    gender = models.CharField(max_length=20, choices=[('MALE', 'Male'), ('FEMALE', 'Female'), ('OTHER', 'Other')], default='MALE')
+    dob = models.DateField(null=True, blank=True)
+    
+    address = models.TextField(blank=True, default='')
+    village = models.CharField(max_length=100)
+    taluk = models.CharField(max_length=100, blank=True, default='')
+    district = models.CharField(max_length=100, blank=True, default='')
+    state = models.CharField(max_length=100, default='Karnataka')
+    pincode = models.CharField(max_length=10, blank=True, default='')
+    
+    land_survey_number = models.CharField(max_length=100, blank=True, default='')
+    land_area_acres = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    
+    utara_document = models.FileField(upload_to='utara_docs/', null=True, blank=True)
+    
+    status = models.CharField(max_length=20, choices=ApplicationStatus.choices, default=ApplicationStatus.PENDING, db_index=True)
+    rejection_reason = models.TextField(blank=True, default='')
+    
+    verified_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='verified_applications')
+    verified_at = models.DateTimeField(null=True, blank=True)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'membership_applications'
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Application {self.id} - {self.first_name} {self.last_name} ({self.status})"
+

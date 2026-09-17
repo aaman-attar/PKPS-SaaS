@@ -4,8 +4,28 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import User, OTPDevice, UserRole
-from .serializers import UserSerializer, CreateUserSerializer, CustomTokenObtainPairSerializer, OTPVerifySerializer
+from .serializers import UserSerializer, CreateUserSerializer, CustomTokenObtainPairSerializer, OTPVerifySerializer, RegisterFarmerSerializer
 from .sms_service import send_sms_otp
+
+class RegisterFarmerView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        serializer = RegisterFarmerSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        user = serializer.save()
+
+        # Issue JWT tokens directly upon successful registration
+        refresh = RefreshToken.for_user(user)
+        refresh['role'] = user.role
+        refresh['tenant_id'] = None
+
+        return Response({
+            'message': 'Farmer registration successful',
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
+            'user': UserSerializer(user).data
+        }, status=status.HTTP_201_CREATED)
 
 class LoginView(APIView):
     permission_classes = [permissions.AllowAny]

@@ -151,6 +151,35 @@ export interface AuditLog {
   timestamp: string;
 }
 
+export interface MembershipApplication {
+  id: string;
+  applicant?: User;
+  tenant?: Tenant;
+  first_name: string;
+  last_name: string;
+  father_name?: string;
+  mobile: string;
+  email?: string;
+  aadhaar_number?: string;
+  gender?: string;
+  dob?: string;
+  address?: string;
+  village: string;
+  taluk?: string;
+  district?: string;
+  state?: string;
+  pincode?: string;
+  land_survey_number?: string;
+  land_area_acres?: string | number;
+  utara_document?: string;
+  status: 'PENDING' | 'APPROVED' | 'REJECTED';
+  rejection_reason?: string;
+  verified_by?: any;
+  verified_at?: string;
+  created_at: string;
+  updated_at?: string;
+}
+
 export interface DashboardMetrics {
   system_role: 'SUPER_ADMIN' | 'PKPS_STAFF' | 'FARMER';
   total_tenants?: number;
@@ -171,3 +200,4 @@ export interface DashboardMetrics {
   savings_balance?: string | number;
   active_loans_count?: number;
 }
+

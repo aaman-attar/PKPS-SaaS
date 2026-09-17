@@ -2,6 +2,7 @@ import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LoginPage } from './pages/auth/LoginPage';
+import { RegisterPage } from './pages/auth/RegisterPage';
 
 import { SuperAdminLayout } from './layouts/SuperAdminLayout';
 import { SuperAdminDashboard } from './pages/saas_admin/SuperAdminDashboard';
@@ -11,6 +12,7 @@ import { UsersListPage } from './pages/saas_admin/UsersListPage';
 import { PKPSLayout } from './layouts/PKPSLayout';
 import { PKPSDashboard } from './pages/pkps_admin/PKPSDashboard';
 import { MembersListPage } from './pages/pkps_admin/MembersListPage';
+import { MembershipApplicationsPage } from './pages/pkps_admin/MembershipApplicationsPage';
 import { LoansManagementPage } from './pages/pkps_admin/LoansManagementPage';
 import { SharesManagementPage } from './pages/pkps_admin/SharesManagementPage';
 import { DepositsManagementPage } from './pages/pkps_admin/DepositsManagementPage';
@@ -21,6 +23,7 @@ import { FarmerLayout } from './layouts/FarmerLayout';
 import { FarmerDashboard } from './pages/farmer/FarmerDashboard';
 import { FarmerLoansPage } from './pages/farmer/FarmerLoansPage';
 import { FarmerSavingsPage } from './pages/farmer/FarmerSavingsPage';
+import { ApplyMembershipPage } from './pages/farmer/ApplyMembershipPage';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode; allowedRoles?: string[] }> = ({ children, allowedRoles }) => {
   const { user, isAuthenticated } = useAuth();
@@ -42,6 +45,7 @@ export const AppRoutes: React.FC = () => {
   return (
     <Routes>
       <Route path="/login" element={<LoginPage />} />
+      <Route path="/register" element={<RegisterPage />} />
 
       {/* SaaS Admin Portal */}
       <Route
@@ -73,6 +77,7 @@ export const AppRoutes: React.FC = () => {
         }
       >
         <Route path="dashboard" element={<PKPSDashboard />} />
+        <Route path="applications" element={<MembershipApplicationsPage />} />
         <Route path="members" element={<MembersListPage />} />
         <Route path="loans" element={<LoansManagementPage />} />
         <Route path="shares" element={<SharesManagementPage />} />
@@ -92,6 +97,7 @@ export const AppRoutes: React.FC = () => {
         }
       >
         <Route path="dashboard" element={<FarmerDashboard />} />
+        <Route path="apply" element={<ApplyMembershipPage />} />
         <Route path="loans" element={<FarmerLoansPage />} />
         <Route path="savings" element={<FarmerSavingsPage />} />
         <Route index element={<Navigate to="dashboard" replace />} />
@@ -101,6 +107,7 @@ export const AppRoutes: React.FC = () => {
     </Routes>
   );
 };
+
 
 export default function App() {
   return (

@@ -25,7 +25,7 @@ class Tenant(models.Model):
     pincode = models.CharField(max_length=10, blank=True, default='')
     
     dccb_name = models.CharField(max_length=200, help_text="District Central Cooperative Bank", blank=True, default='')
-    contact_number = models.CharField(max_length=20)
+    contact_number = models.CharField(max_length=20, blank=True, default='')
     email = models.EmailField()
     
     status = models.CharField(

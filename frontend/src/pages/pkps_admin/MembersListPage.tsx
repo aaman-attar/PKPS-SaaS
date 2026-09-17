@@ -734,6 +734,37 @@ export const MembersListPage: React.FC = () => {
               )}
             </div>
 
+            {/* Member Loan Applications & Accounts Summary */}
+            <div className="space-y-3 pt-2">
+              <h4 className="font-bold text-slate-200 text-sm flex items-center space-x-2">
+                <CreditCard className="w-4 h-4 text-blue-400" />
+                <span>Loan Applications & Active Accounts</span>
+              </h4>
+              {showDetailModal.loan_applications && showDetailModal.loan_applications.length > 0 ? (
+                <div className="space-y-2">
+                  {showDetailModal.loan_applications.map((app: any) => (
+                    <div key={app.id} className="p-3 rounded-xl bg-slate-950 border border-slate-800 flex justify-between items-center text-xs">
+                      <div>
+                        <span className="font-mono text-blue-400 font-bold">{app.application_number}</span>
+                        <span className="text-slate-300 font-medium ml-2">{app.product_name}</span>
+                        <span className="text-slate-500 block text-[11px]">{app.purpose}</span>
+                      </div>
+                      <div className="text-right">
+                        <span className="font-bold text-emerald-400 text-sm block">₹{app.requested_amount}</span>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-500/10 text-blue-400 border border-blue-500/30">
+                          {app.status}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-xs text-slate-500 p-4 rounded-xl bg-slate-950 border border-slate-800 text-center">
+                  No loan applications submitted by this member yet.
+                </div>
+              )}
+            </div>
+
             <div className="flex justify-end pt-4 border-t border-slate-800">
               <button onClick={() => setShowDetailModal(null)} className="px-5 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-bold">
                 Close Profile
@@ -742,6 +773,7 @@ export const MembersListPage: React.FC = () => {
           </div>
         </div>
       )}
+
 
       {/* Add Land Modal */}
       {showLandModal && (

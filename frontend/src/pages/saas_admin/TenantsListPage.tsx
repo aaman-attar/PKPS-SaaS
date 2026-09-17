@@ -33,8 +33,11 @@ export const TenantsListPage: React.FC = () => {
     }
   };
 
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMsg(null);
     try {
       await api.post('/tenants/', formData);
       setShowModal(false);
@@ -43,8 +46,21 @@ export const TenantsListPage: React.FC = () => {
         code: '', name: '', registration_number: '', village: '', taluk: '', district: '',
         state: 'Karnataka', pincode: '', dccb_name: '', contact_number: '', email: '', subscription_plan: 'STANDARD'
       });
-    } catch (err) {
-      alert('Error creating tenant');
+    } catch (err: any) {
+      console.error(err);
+      if (err.response?.data) {
+        const data = err.response.data;
+        if (typeof data === 'object') {
+          const messages = Object.entries(data).map(([field, msgs]: [string, any]) => 
+            `${field}: ${Array.isArray(msgs) ? msgs.join(', ') : msgs}`
+          );
+          setErrorMsg(messages.join(' | '));
+        } else {
+          setErrorMsg(String(data));
+        }
+      } else {
+        setErrorMsg(err.message || 'Error creating tenant');
+      }
     }
   };
 
@@ -128,6 +144,11 @@ export const TenantsListPage: React.FC = () => {
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full p-6 space-y-4">
             <h3 className="text-xl font-bold text-slate-100">Register New PKPS Society</h3>
+            {errorMsg && (
+              <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-xl text-red-400 text-xs font-medium">
+                {errorMsg}
+              </div>
+            )}
             <form onSubmit={handleCreate} className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <input
@@ -176,6 +197,13 @@ export const TenantsListPage: React.FC = () => {
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   className="bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-100 text-sm"
+                />
+                <input
+                  type="text"
+                  placeholder="Contact Number (Optional)"
+                  value={formData.contact_number}
+                  onChange={(e) => setFormData({ ...formData, contact_number: e.target.value })}
+                  className="bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-100 text-sm col-span-2"
                 />
               </div>
 

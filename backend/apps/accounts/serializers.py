@@ -53,3 +53,20 @@ class CustomTokenObtainPairSerializer(serializers.Serializer):
 class OTPVerifySerializer(serializers.Serializer):
     username = serializers.CharField()
     otp_code = serializers.CharField(max_length=6, min_length=6)
+
+class RegisterFarmerSerializer(serializers.ModelSerializer):
+    password = serializers.CharField(write_only=True, min_length=6)
+
+    class Meta:
+        model = User
+        fields = ('id', 'username', 'email', 'mobile', 'first_name', 'last_name', 'password')
+
+    def create(self, validated_data):
+        password = validated_data.pop('password')
+        validated_data['role'] = UserRole.FARMER
+        validated_data['tenant'] = None
+        user = User(**validated_data)
+        user.set_password(password)
+        user.save()
+        return user
+

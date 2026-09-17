@@ -187,7 +187,19 @@ export const LoginPage: React.FC = () => {
               <span>{loading ? 'Authenticating User...' : 'Proceed to Sign In'}</span>
               <ArrowRight className="w-5 h-5 stroke-[2.5]" />
             </button>
+
+            <div className="text-center pt-3 border-t border-slate-800/60">
+              <span className="text-xs text-slate-400">Are you a new farmer? </span>
+              <button
+                type="button"
+                onClick={() => navigate('/register')}
+                className="text-xs font-bold text-emerald-400 hover:text-emerald-300 underline underline-offset-4 transition"
+              >
+                Register Account & Apply to Society
+              </button>
+            </div>
           </form>
+
         ) : (
           /* Step 2: OTP Verification Form */
           <form onSubmit={handleOtpSubmit} className="space-y-4">

@@ -4,7 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import { 
   Building, Users, CreditCard, Landmark, PiggyBank, BookOpen, 
   ShieldCheck, LogOut, LayoutDashboard, PanelLeftClose, PanelLeftOpen,
-  Menu, X, Sparkles
+  Menu, X, Sparkles, ClipboardCheck
 } from 'lucide-react';
 
 export const PKPSLayout: React.FC = () => {
@@ -21,6 +21,7 @@ export const PKPSLayout: React.FC = () => {
 
   const navItems = [
     { label: 'Society Dashboard', path: '/pkps/dashboard', icon: LayoutDashboard },
+    { label: 'Farmer Applications', path: '/pkps/applications', icon: ClipboardCheck },
     { label: 'Members & KYC', path: '/pkps/members', icon: Users },
     { label: 'Loans & Recovery', path: '/pkps/loans', icon: CreditCard },
     { label: 'Share Capital', path: '/pkps/shares', icon: Landmark },
@@ -28,6 +29,7 @@ export const PKPSLayout: React.FC = () => {
     { label: 'Financial Accounting', path: '/pkps/accounting', icon: BookOpen },
     { label: 'Audit Trail', path: '/pkps/audit', icon: ShieldCheck },
   ];
+
 
   return (
     <div className="min-h-screen bg-[#060913] text-slate-100 flex flex-col selection:bg-emerald-500 selection:text-white">

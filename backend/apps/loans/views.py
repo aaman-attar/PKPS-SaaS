@@ -50,8 +50,22 @@ class LoanApplicationViewSet(viewsets.ModelViewSet):
         return LoanApplication.objects.none()
 
     def perform_create(self, serializer):
+        user = self.request.user
+        member = serializer.validated_data.get('member')
+        if not member:
+            member = Member.objects.filter(user=user).first()
+            if not member:
+                raise serializers.ValidationError({'detail': 'Your account is not a verified society member yet. Please apply for membership first.'})
+
+        tenant = user.tenant or member.tenant
         app_num = f"LA-{timezone.now().year}-{uuid.uuid4().hex[:6].upper()}"
-        serializer.save(tenant=self.request.user.tenant, application_number=app_num, status=LoanApplicationStatus.SUBMITTED)
+        serializer.save(
+            tenant=tenant,
+            member=member,
+            application_number=app_num,
+            status=LoanApplicationStatus.SUBMITTED
+        )
+
 
     @action(detail=True, methods=['post'], url_path='verify')
     def verify(self, request, pk=None):

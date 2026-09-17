@@ -15,6 +15,17 @@ class CreateTenantSerializer(serializers.ModelSerializer):
             'address', 'village', 'taluk', 'district', 'state', 'pincode',
             'dccb_name', 'contact_number', 'email', 'subscription_plan'
         )
+        extra_kwargs = {
+            'contact_number': {'required': False, 'allow_blank': True},
+            'registration_date': {'required': False, 'allow_null': True},
+            'address': {'required': False, 'allow_blank': True},
+            'village': {'required': False, 'allow_blank': True},
+            'taluk': {'required': False, 'allow_blank': True},
+            'district': {'required': False, 'allow_blank': True},
+            'pincode': {'required': False, 'allow_blank': True},
+            'dccb_name': {'required': False, 'allow_blank': True},
+            'subscription_plan': {'required': False},
+        }
 
 class TenantStatusUpdateSerializer(serializers.Serializer):
     status = serializers.ChoiceField(choices=[

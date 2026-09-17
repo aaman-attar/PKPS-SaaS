@@ -10,6 +10,11 @@ class TenantViewSet(viewsets.ModelViewSet):
     serializer_class = TenantSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    def get_serializer_class(self):
+        if self.action == 'create':
+            return CreateTenantSerializer
+        return TenantSerializer
+
     def get_permissions(self):
         if self.action in ['create', 'update', 'partial_update', 'destroy', 'update_status', 'list']:
             return [IsSuperAdmin()]
@@ -23,8 +28,15 @@ class TenantViewSet(viewsets.ModelViewSet):
             return Tenant.objects.filter(id=user.tenant.id)
         return Tenant.objects.none()
 
+    @action(detail=False, methods=['get'], permission_classes=[permissions.AllowAny], url_path='public')
+    def public_list(self, request):
+        tenants = Tenant.objects.filter(status=TenantStatus.ACTIVE)
+        serializer = TenantSerializer(tenants, many=True)
+        return Response(serializer.data)
+
     @action(detail=True, methods=['post'], url_path='update-status')
     def update_status(self, request, pk=None):
+
         tenant = self.get_object()
         serializer = TenantStatusUpdateSerializer(data=request.data)
         serializer.is_validate_or_400 = serializer.is_valid(raise_exception=True)
