@@ -26,34 +26,38 @@ export const MembersListPage: React.FC = () => {
     mobile: '',
     email: '',
     aadhaar_number: '',
-    is_kyc_verified: true,
+    is_kyc_verified: false,
     father_name: '',
     spouse_name: '',
-    marital_status: 'Married',
-    blood_group: 'O+',
-    religion: 'Hinduism',
-    caste_category: 'OBC',
-    qualification: 'Graduate',
-    occupation: 'Agriculture',
-    annual_income: '150000.00',
-    board_resolution_no: 'BR-2026/089',
+    marital_status: '',
+    blood_group: '',
+    religion: '',
+    caste_category: '',
+    qualification: '',
+    occupation: '',
+    annual_income: '0.00',
+    board_resolution_no: '',
     board_resolution_date: new Date().toISOString().split('T')[0],
-    dccb_sb_account_no: 'DCCB-SB-440912',
-    ledger_folio_no: 'LF-104',
-    address: 'Rural Agricultural Belt',
-    village: 'Mandya Rural',
-    taluk: 'Mandya',
-    district: 'Mandya',
+    dccb_sb_account_no: '',
+    ledger_folio_no: '',
+    address: '',
+    village: '',
+    taluk: '',
+    district: '',
     state: 'Karnataka',
-    pincode: '571401',
-    status: 'ACTIVE'
+    pincode: '',
+    status: 'ACTIVE',
+    land_survey_number: '',
+    land_area_acres: '',
+    land_unit: 'Acres',
+    land_ownership_type: 'Self Owned'
   });
 
   const [landData, setLandData] = useState({
     survey_number: '',
-    area_acres: '3.50',
+    area_acres: '0.00',
     unit: 'Acres',
-    village: 'Mandya Rural',
+    village: '',
     ownership_type: 'Self Owned',
   });
 
@@ -87,16 +91,17 @@ export const MembersListPage: React.FC = () => {
     setFormData({
       member_number: `M-${Math.floor(100000 + Math.random() * 900000)}`,
       first_name: '', middle_name: '', last_name: '', local_language_name: '',
-      gender: 'MALE', dob: '', mobile: '', email: '', aadhaar_number: '', is_kyc_verified: true,
-      father_name: '', spouse_name: '', marital_status: 'Married', blood_group: 'O+',
-      religion: 'Hinduism', caste_category: 'OBC', qualification: 'Graduate', occupation: 'Agriculture',
-      annual_income: '150000.00', board_resolution_no: 'BR-2026/089',
+      gender: 'MALE', dob: '', mobile: '', email: '', aadhaar_number: '', is_kyc_verified: false,
+      father_name: '', spouse_name: '', marital_status: '', blood_group: '',
+      religion: '', caste_category: '', qualification: '', occupation: '',
+      annual_income: '0.00', board_resolution_no: '',
       board_resolution_date: new Date().toISOString().split('T')[0],
-      dccb_sb_account_no: 'DCCB-SB-440912', ledger_folio_no: 'LF-104',
-      address: 'Rural Agricultural Belt', village: 'Mandya Rural', taluk: 'Mandya',
-      district: 'Mandya', state: 'Karnataka', pincode: '571401', status: 'ACTIVE'
+      dccb_sb_account_no: '', ledger_folio_no: '',
+      address: '', village: '', taluk: '', district: '', state: 'Karnataka', pincode: '', status: 'ACTIVE',
+      land_survey_number: '', land_area_acres: '', land_unit: 'Acres', land_ownership_type: 'Self Owned'
     });
   };
+
 
   const handleAddLand = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -542,6 +547,67 @@ export const MembersListPage: React.FC = () => {
                     onChange={(e) => setFormData({ ...formData, ledger_folio_no: e.target.value })}
                     className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-100 font-mono focus:border-indigo-500"
                   />
+                </div>
+              </div>
+            </div>
+
+            {/* Section 5: Agricultural Land Record (Optional) */}
+            <div className="space-y-4">
+              <div className="flex items-center space-x-2 border-b border-slate-800 pb-2">
+                <span className="w-2.5 h-2.5 rounded-full bg-teal-500"></span>
+                <h3 className="font-bold text-slate-200 text-sm uppercase tracking-wider">5. Initial Agricultural Land Holding (Optional)</h3>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-xs">
+                <div>
+                  <label htmlFor="land_survey_number" className="block text-slate-400 font-semibold mb-1">Survey Number</label>
+                  <input
+                    id="land_survey_number"
+                    type="text"
+                    placeholder="e.g. 142/2A"
+                    value={formData.land_survey_number}
+                    onChange={(e) => setFormData({ ...formData, land_survey_number: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-100 font-mono focus:border-teal-500"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="land_area_acres" className="block text-slate-400 font-semibold mb-1">Area Acreage</label>
+                  <input
+                    id="land_area_acres"
+                    type="number"
+                    step="0.01"
+                    placeholder="e.g. 2.50"
+                    value={formData.land_area_acres}
+                    onChange={(e) => setFormData({ ...formData, land_area_acres: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-100 font-mono focus:border-teal-500"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="land_unit" className="block text-slate-400 font-semibold mb-1">Unit</label>
+                  <select
+                    id="land_unit"
+                    value={formData.land_unit}
+                    onChange={(e) => setFormData({ ...formData, land_unit: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-100 focus:border-teal-500"
+                  >
+                    <option value="Acres">Acres</option>
+                    <option value="Guntas">Guntas</option>
+                    <option value="Hectares">Hectares</option>
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="land_ownership_type" className="block text-slate-400 font-semibold mb-1">Ownership Type</label>
+                  <select
+                    id="land_ownership_type"
+                    value={formData.land_ownership_type}
+                    onChange={(e) => setFormData({ ...formData, land_ownership_type: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-slate-100 focus:border-teal-500"
+                  >
+                    <option value="Self Owned">Self Owned</option>
+                    <option value="Ancestral">Ancestral</option>
+                    <option value="Joint Ownership">Joint Ownership</option>
+                    <option value="Leased">Leased</option>
+                  </select>
                 </div>
               </div>
             </div>

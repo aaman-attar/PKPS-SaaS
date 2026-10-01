@@ -17,6 +17,7 @@ class ShareAccount(models.Model):
 
     class Meta:
         db_table = 'share_accounts'
+        ordering = ['-created_at']
 
     def __str__(self):
         return f"Shares: {self.member.member_number} - {self.total_shares} shares (₹{self.total_amount})"

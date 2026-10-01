@@ -1,3 +1,4 @@
+from decimal import Decimal
 from rest_framework import serializers
 from .models import AccountHead, JournalEntry, JournalLine
 
@@ -27,9 +28,26 @@ class JournalEntrySerializer(serializers.ModelSerializer):
 
 class CreateJournalLineSerializer(serializers.Serializer):
     account_head_id = serializers.UUIDField()
-    debit = serializers.DecimalField(max_digits=18, decimal_places=2, default=0.00)
-    credit = serializers.DecimalField(max_digits=18, decimal_places=2, default=0.00)
+    debit = serializers.DecimalField(max_digits=18, decimal_places=2, default=Decimal("0.00"))
+    credit = serializers.DecimalField(max_digits=18, decimal_places=2, default=Decimal("0.00"))
+
+    def validate(self, attrs):
+        debit = attrs.get('debit', Decimal("0.00"))
+        credit = attrs.get('credit', Decimal("0.00"))
+
+        if debit < 0 or credit < 0:
+            raise serializers.ValidationError("Debit and Credit values cannot be negative.")
+
+        if (debit > 0 and credit > 0) or (debit == 0 and credit == 0):
+            raise serializers.ValidationError("Each line must have either a Debit > 0 or a Credit > 0, but not both.")
+
+        return attrs
 
 class CreateJournalEntrySerializer(serializers.Serializer):
-    narration = serializers.CharField()
+    narration = serializers.CharField(max_length=500)
     lines = CreateJournalLineSerializer(many=True)
+
+    def validate_lines(self, value):
+        if not value or len(value) < 2:
+            raise serializers.ValidationError("A journal entry must contain at least 2 line items.")
+        return value

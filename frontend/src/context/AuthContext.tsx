@@ -28,6 +28,22 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [mfaRequired, setMfaRequired] = useState(false);
   const [mfaUsername, setMfaUsername] = useState('');
 
+  // Synchronize authentication state across browser tabs
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'user' || e.key === 'access_token') {
+        try {
+          const saved = localStorage.getItem('user');
+          setUser(saved && saved !== 'undefined' && saved !== 'null' ? JSON.parse(saved) : null);
+        } catch {
+          setUser(null);
+        }
+      }
+    };
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
+
   const isAuthenticated = !!user && !!localStorage.getItem('access_token');
 
   const login = async (username: string, password: string) => {
@@ -35,7 +51,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (response.data.mfa_required) {
       setMfaRequired(true);
       setMfaUsername(response.data.username);
-      return { mfa_required: true, message: response.data.message };
+      return {
+        mfa_required: true,
+        username: response.data.username,
+        message: response.data.message,
+        dev_otp: response.data.dev_otp ?? null,  // Present only when FAST2SMS_ENABLED=False
+      };
     } else {
       localStorage.setItem('access_token', response.data.access);
       localStorage.setItem('refresh_token', response.data.refresh);

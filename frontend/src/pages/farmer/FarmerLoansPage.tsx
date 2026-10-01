@@ -230,81 +230,150 @@ export const FarmerLoansPage: React.FC = () => {
       {/* Apply Loan Modal */}
       {showApplyModal && (
         <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-4 z-50">
-          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-6 shadow-2xl relative">
+          <div className="bg-slate-900 border border-slate-800 rounded-3xl max-w-lg w-full p-6 sm:p-8 space-y-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-800 pb-4">
               <div>
-                <span className="text-xs font-bold text-emerald-400 uppercase">New Loan Request</span>
+                <span className="text-xs font-bold text-emerald-400 uppercase tracking-wider">New Loan Request</span>
                 <h3 className="text-xl font-bold text-slate-100">Apply for Agricultural Loan</h3>
               </div>
               <button onClick={() => setShowApplyModal(false)} className="text-slate-400 hover:text-slate-100 text-lg">✕</button>
             </div>
 
-            <form onSubmit={handleApplyLoan} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">
-                  Select Loan Product *
-                </label>
-                <select
-                  required
-                  value={loanFormData.loan_product_id}
-                  onChange={(e) => setLoanFormData({ ...loanFormData, loan_product_id: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-slate-100 text-sm focus:border-emerald-500 focus:outline-none"
-                >
-                  {products.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name} ({p.interest_rate_pa}% p.a.) - Max ₹{p.max_amount}
-                    </option>
-                  ))}
-                </select>
+            {products.length === 0 ? (
+              <div className="p-5 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-amber-200 space-y-3">
+                <div className="flex items-center space-x-2">
+                  <AlertCircle className="w-5 h-5 text-amber-400 flex-shrink-0" />
+                  <span className="font-semibold text-sm">No Active Loan Schemes Available</span>
+                </div>
+                <p className="text-xs text-amber-300/90 leading-relaxed">
+                  Your registered PKPS cooperative society does not currently have active loan schemes configured, or your membership application is still awaiting verification by the Society Secretary.
+                </p>
+                <div className="flex justify-end pt-2">
+                  <button
+                    type="button"
+                    onClick={fetchFarmerLoans}
+                    className="px-4 py-2 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 border border-amber-500/40 rounded-xl text-xs font-semibold"
+                  >
+                    Refresh Schemes
+                  </button>
+                </div>
               </div>
+            ) : (
+              <form onSubmit={handleApplyLoan} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+                    Select Loan Product *
+                  </label>
+                  <select
+                    required
+                    value={loanFormData.loan_product_id}
+                    onChange={(e) => setLoanFormData({ ...loanFormData, loan_product_id: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-slate-100 text-sm focus:border-emerald-500 focus:outline-none"
+                  >
+                    <option value="">-- Choose a Loan Product --</option>
+                    {products.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.name} ({p.interest_rate_pa}% p.a.) - Max ₹{Number(p.max_amount).toLocaleString('en-IN')}
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">
-                  Requested Loan Amount (₹) *
-                </label>
-                <input
-                  type="number"
-                  step="1000"
-                  required
-                  placeholder="e.g. 50000"
-                  value={loanFormData.requested_amount}
-                  onChange={(e) => setLoanFormData({ ...loanFormData, requested_amount: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-slate-100 font-bold text-lg text-emerald-400 focus:border-emerald-500 focus:outline-none"
-                />
-              </div>
+                {/* Selected Product Scheme Details Card */}
+                {(() => {
+                  const selProd = products.find(p => String(p.id) === String(loanFormData.loan_product_id));
+                  if (!selProd) return null;
+                  return (
+                    <div className="p-3.5 rounded-xl bg-slate-950/80 border border-slate-800 text-xs space-y-2">
+                      <div className="flex justify-between items-center text-slate-300">
+                        <span className="text-slate-400">Interest Rate:</span>
+                        <span className="font-semibold text-emerald-400">{selProd.interest_rate_pa}% p.a.</span>
+                      </div>
+                      <div className="flex justify-between items-center text-slate-300">
+                        <span className="text-slate-400">Max Sanction Limit:</span>
+                        <span className="font-semibold text-emerald-400">₹{Number(selProd.max_amount).toLocaleString('en-IN')}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-slate-300">
+                        <span className="text-slate-400">Repayment Tenure:</span>
+                        <span className="font-semibold text-slate-200">{selProd.tenure_months} months</span>
+                      </div>
+                      {selProd.description && (
+                        <p className="text-[11px] text-slate-400 italic pt-1 border-t border-slate-800">
+                          {selProd.description}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })()}
 
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">
-                  Loan Purpose & Crop Details *
-                </label>
-                <textarea
-                  rows={3}
-                  required
-                  placeholder="e.g. Purchase of seeds, fertilizers & crop maintenance for Kharif Paddy season"
-                  value={loanFormData.purpose}
-                  onChange={(e) => setLoanFormData({ ...loanFormData, purpose: e.target.value })}
-                  className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3.5 text-slate-100 text-xs focus:border-emerald-500 focus:outline-none"
-                />
-              </div>
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+                    Requested Loan Amount (₹) *
+                  </label>
+                  <input
+                    type="number"
+                    step="1000"
+                    required
+                    placeholder="e.g. 50000"
+                    value={loanFormData.requested_amount}
+                    onChange={(e) => setLoanFormData({ ...loanFormData, requested_amount: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-slate-100 font-bold text-lg text-emerald-400 focus:border-emerald-500 focus:outline-none"
+                  />
+                  {(() => {
+                    const selProd = products.find(p => String(p.id) === String(loanFormData.loan_product_id));
+                    if (!selProd || !loanFormData.requested_amount) return null;
+                    const reqAmt = Number(loanFormData.requested_amount);
+                    if (reqAmt > Number(selProd.max_amount)) {
+                      return (
+                        <p className="text-xs text-red-400 font-medium mt-1">
+                          Amount exceeds scheme maximum limit of ₹{Number(selProd.max_amount).toLocaleString('en-IN')}.
+                        </p>
+                      );
+                    }
+                    if (reqAmt < Number(selProd.min_amount)) {
+                      return (
+                        <p className="text-xs text-amber-400 font-medium mt-1">
+                          Amount is below minimum requirement of ₹{Number(selProd.min_amount).toLocaleString('en-IN')}.
+                        </p>
+                      );
+                    }
+                    return null;
+                  })()}
+                </div>
 
-              <div className="flex justify-end space-x-3 pt-4 border-t border-slate-800">
-                <button
-                  type="button"
-                  onClick={() => setShowApplyModal(false)}
-                  className="px-4 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-bold text-xs shadow-lg shadow-emerald-500/25 transition disabled:opacity-50 flex items-center space-x-1.5"
-                >
-                  <Send className="w-3.5 h-3.5" />
-                  <span>{submitting ? 'Submitting Request...' : 'Submit Loan Application'}</span>
-                </button>
-              </div>
-            </form>
+                <div>
+                  <label className="block text-xs font-bold uppercase tracking-wider text-slate-300 mb-1.5">
+                    Loan Purpose & Crop Details *
+                  </label>
+                  <textarea
+                    rows={3}
+                    required
+                    placeholder="e.g. Purchase of seeds, fertilizers & crop maintenance for Kharif Paddy season"
+                    value={loanFormData.purpose}
+                    onChange={(e) => setLoanFormData({ ...loanFormData, purpose: e.target.value })}
+                    className="w-full bg-slate-950 border border-slate-700 rounded-xl p-3.5 text-slate-100 text-xs focus:border-emerald-500 focus:outline-none"
+                  />
+                </div>
+
+                <div className="flex justify-end space-x-3 pt-4 border-t border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => setShowApplyModal(false)}
+                    className="px-4 py-2.5 rounded-xl bg-slate-800 text-slate-300 text-xs font-semibold"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={submitting || !loanFormData.loan_product_id}
+                    className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 via-teal-500 to-emerald-600 hover:from-emerald-400 hover:to-teal-400 text-slate-950 font-bold text-xs shadow-lg shadow-emerald-500/25 transition disabled:opacity-50 flex items-center space-x-1.5"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                    <span>{submitting ? 'Submitting Request...' : 'Submit Loan Application'}</span>
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       )}

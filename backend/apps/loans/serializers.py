@@ -1,13 +1,18 @@
 from rest_framework import serializers
-from .models import LoanProduct, LoanApplication, LoanAccount, LoanRepayment
+from .models import LoanProduct, LoanApplication, LoanAccount, LoanRepayment, LoanRepaymentSchedule
 from apps.members.models import Member
 
 class LoanProductSerializer(serializers.ModelSerializer):
-
     class Meta:
         model = LoanProduct
         fields = '__all__'
         read_only_fields = ('id', 'tenant', 'created_at')
+
+class LoanRepaymentScheduleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = LoanRepaymentSchedule
+        fields = '__all__'
+        read_only_fields = ('id', 'tenant', 'loan_account')
 
 class LoanRepaymentSerializer(serializers.ModelSerializer):
     member_name = serializers.CharField(source='member.first_name', read_only=True)
@@ -20,13 +25,17 @@ class LoanRepaymentSerializer(serializers.ModelSerializer):
 
 class LoanAccountSerializer(serializers.ModelSerializer):
     repayments = LoanRepaymentSerializer(many=True, read_only=True)
+    schedules = LoanRepaymentScheduleSerializer(many=True, read_only=True)
     member_name = serializers.CharField(source='member.first_name', read_only=True)
     member_number = serializers.CharField(source='member.member_number', read_only=True)
 
     class Meta:
         model = LoanAccount
         fields = '__all__'
-        read_only_fields = ('id', 'tenant', 'disbursed_date')
+        read_only_fields = (
+            'id', 'tenant', 'disbursed_date', 'sanctioned_amount', 'disbursed_amount',
+            'outstanding_principal', 'outstanding_interest', 'overdue_amount', 'excess_credit'
+        )
 
 class LoanApplicationSerializer(serializers.ModelSerializer):
     member_name = serializers.SerializerMethodField()
@@ -50,4 +59,3 @@ class CreateLoanApplicationSerializer(serializers.ModelSerializer):
     class Meta:
         model = LoanApplication
         fields = ('member', 'loan_product', 'requested_amount', 'purpose')
-

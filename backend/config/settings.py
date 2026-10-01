@@ -8,7 +8,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Load environment variables from .env
 dotenv.load_dotenv(BASE_DIR / '.env')
 
-SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-pkps-saas-key-2026')
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-pkps-saas-key-2026-production-ready-secret')
 DEBUG = os.getenv('DEBUG', 'True').lower() in ('true', '1', 't')
 
 ALLOWED_HOSTS = [host.strip() for host in os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1,.onrender.com').split(',') if host.strip()]
@@ -26,6 +26,7 @@ INSTALLED_APPS = [
 
     # Third-party apps
     'rest_framework',
+    'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
 
     # PKPS SaaS System Apps
@@ -78,9 +79,17 @@ TEMPLATES = [
 WSGI_APPLICATION = 'config.wsgi.application'
 
 # Database Configuration
-USE_SQLITE = os.getenv('USE_SQLITE', 'False').lower() in ('true', '1', 't')
-DATABASE_URL = None if USE_SQLITE else os.getenv('DATABASE_URL')
+if not DEBUG:
+    USE_SQLITE = False
+    DATABASE_URL = os.getenv('DATABASE_URL')
+    if not DATABASE_URL:
+        raise RuntimeError("DATABASE_URL is strictly required in production environment (DEBUG=False). SQLite fallback is disabled.")
+else:
+    USE_SQLITE = os.getenv('USE_SQLITE', 'False').lower() in ('true', '1', 't')
+    DATABASE_URL = None if USE_SQLITE else os.getenv('DATABASE_URL')
+
 USE_MYSQL = os.getenv('USE_MYSQL', 'False').lower() in ('true', '1', 't')
+
 
 if DATABASE_URL:
     try:
@@ -88,10 +97,11 @@ if DATABASE_URL:
         import socket
         parsed_db_url = urlparse(DATABASE_URL)
         if parsed_db_url.hostname:
-            # Check if database host is reachable/resolvable via DNS
             socket.gethostbyname(parsed_db_url.hostname)
     except (socket.gaierror, socket.error, Exception) as dns_err:
-        print(f"[DB WARNING] Could not resolve database host '{DATABASE_URL.split('@')[-1]}': {dns_err}. Falling back to local database.")
+        print(f"[DB ERROR] Could not resolve database host '{DATABASE_URL.split('@')[-1]}': {dns_err}.")
+        if not DEBUG:
+            raise RuntimeError(f"Database host unreachable in production: {dns_err}")
         DATABASE_URL = None
 
 if DATABASE_URL:
@@ -100,9 +110,8 @@ if DATABASE_URL:
         is_aiven = 'aiven' in DATABASE_URL.lower()
         ssl_require = is_aiven or os.getenv('DB_SSL_REQUIRE', 'False').lower() in ('true', '1', 't')
 
-        # Clean URL if it contains 'ssl-mode' or 'sslmode' which mysqlclient doesn't accept as keyword arg
         cleaned_url = DATABASE_URL
-        for param in ['?ssl-mode=REQUIRED', '&ssl-mode=REQUIRED', '?sslmode=require', '&sslmode=require', '?ssl-mode=REQUIRED', '&ssl-mode=REQUIRED']:
+        for param in ['?ssl-mode=REQUIRED', '&ssl-mode=REQUIRED', '?sslmode=require', '&sslmode=require']:
             cleaned_url = cleaned_url.replace(param, '')
 
         db_config = dj_database_url.config(
@@ -112,7 +121,6 @@ if DATABASE_URL:
             ssl_require=ssl_require,
         )
 
-        # Sanitize OPTIONS dictionary for mysqlclient / MySQLdb compatibility
         options = db_config.get('OPTIONS', {})
         options.pop('ssl-mode', None)
         options.pop('sslmode', None)
@@ -125,11 +133,14 @@ if DATABASE_URL:
         db_config['OPTIONS'] = options
         DATABASES = {'default': db_config}
     except Exception as e:
+        if not DEBUG:
+            raise RuntimeError(f"Failed to configure database from DATABASE_URL in production: {e}")
         DATABASE_URL = None
 
+if 'default' not in locals().get('DATABASES', {}):
+    if not DEBUG and not USE_SQLITE:
+        raise RuntimeError("DATABASE_URL is required in production environment (DEBUG=False). SQLite fallback is disabled.")
 
-
-if not DATABASE_URL:
     if USE_MYSQL and os.getenv('DB_HOST'):
         db_name = os.getenv('DB_NAME', 'pkps_db')
         db_user = os.getenv('DB_USER', 'root')
@@ -137,7 +148,6 @@ if not DATABASE_URL:
         db_host = os.getenv('DB_HOST', 'localhost')
         db_port = int(os.getenv('DB_PORT', '3306'))
 
-        # Auto-create MySQL database if it doesn't exist
         try:
             import MySQLdb
             _conn = MySQLdb.connect(host=db_host, user=db_user, passwd=db_pass, port=db_port)
@@ -163,13 +173,14 @@ if not DATABASE_URL:
             }
         }
     else:
-        # Default safe fallback: SQLite (prevents build failure on Render if DATABASE_URL is missing)
+        # Development fallback: SQLite
         DATABASES = {
             'default': {
                 'ENGINE': 'django.db.backends.sqlite3',
                 'NAME': BASE_DIR / 'db.sqlite3',
             }
         }
+
 
 
 AUTH_USER_MODEL = 'accounts.User'
@@ -203,9 +214,30 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+        'rest_framework.throttling.ScopedRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '120/minute',
+        'user': '600/minute',
+        'login': '15/minute',
+        'otp_verify': '10/minute',
+    },
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
     'PAGE_SIZE': 20,
 }
+
+# HTTP Security Headers & Hardening
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = 'DENY'
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_REFERRER_POLICY = 'strict-origin-when-cross-origin'
+
+_jwt_secret = os.getenv('JWT_SECRET', '')
+if len(_jwt_secret) < 32:
+    _jwt_secret = SECRET_KEY
 
 # Simple JWT Configuration
 SIMPLE_JWT = {
@@ -214,7 +246,7 @@ SIMPLE_JWT = {
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
     'ALGORITHM': 'HS256',
-    'SIGNING_KEY': os.getenv('JWT_SECRET', SECRET_KEY),
+    'SIGNING_KEY': _jwt_secret,
     'AUTH_HEADER_TYPES': ('Bearer',),
     'USER_ID_FIELD': 'id',
     'USER_ID_CLAIM': 'user_id',

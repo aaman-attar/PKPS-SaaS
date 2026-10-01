@@ -18,6 +18,7 @@ class SavingsAccount(models.Model):
     class Meta:
         db_table = 'savings_accounts'
         unique_together = ('tenant', 'account_number')
+        ordering = ['-opened_date']
 
     def __str__(self):
         return f"Savings {self.account_number} (₹{self.current_balance})"

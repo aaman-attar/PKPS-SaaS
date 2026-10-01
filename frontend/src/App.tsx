@@ -3,6 +3,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LoginPage } from './pages/auth/LoginPage';
 import { RegisterPage } from './pages/auth/RegisterPage';
+import { ActivateAccountPage } from './pages/auth/ActivateAccountPage';
 
 import { SuperAdminLayout } from './layouts/SuperAdminLayout';
 import { SuperAdminDashboard } from './pages/saas_admin/SuperAdminDashboard';
@@ -18,6 +19,11 @@ import { SharesManagementPage } from './pages/pkps_admin/SharesManagementPage';
 import { DepositsManagementPage } from './pages/pkps_admin/DepositsManagementPage';
 import { AccountingPage } from './pages/pkps_admin/AccountingPage';
 import { AuditLogPage } from './pages/pkps_admin/AuditLogPage';
+import { BlockchainLedgerPage } from './pages/pkps_admin/BlockchainLedgerPage';
+import { GovernancePage } from './pages/pkps_admin/GovernancePage';
+import { DocumentsPage } from './pages/pkps_admin/DocumentsPage';
+import { NotificationsPage } from './pages/pkps_admin/NotificationsPage';
+import { ReportsPage } from './pages/pkps_admin/ReportsPage';
 
 import { FarmerLayout } from './layouts/FarmerLayout';
 import { FarmerDashboard } from './pages/farmer/FarmerDashboard';
@@ -46,6 +52,8 @@ export const AppRoutes: React.FC = () => {
     <Routes>
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
+      <Route path="/activate" element={<ActivateAccountPage />} />
+      <Route path="/accept-invitation" element={<ActivateAccountPage />} />
 
       {/* SaaS Admin Portal */}
       <Route
@@ -83,9 +91,15 @@ export const AppRoutes: React.FC = () => {
         <Route path="shares" element={<SharesManagementPage />} />
         <Route path="deposits" element={<DepositsManagementPage />} />
         <Route path="accounting" element={<AccountingPage />} />
+        <Route path="governance" element={<GovernancePage />} />
+        <Route path="documents" element={<DocumentsPage />} />
+        <Route path="notifications" element={<NotificationsPage />} />
+        <Route path="reports" element={<ReportsPage />} />
         <Route path="audit" element={<AuditLogPage />} />
+        <Route path="blockchain" element={<BlockchainLedgerPage />} />
         <Route index element={<Navigate to="dashboard" replace />} />
       </Route>
+
 
       {/* Farmer Self-Service Portal */}
       <Route

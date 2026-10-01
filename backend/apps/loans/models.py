@@ -24,6 +24,12 @@ class LoanAccountStatus(models.TextChoices):
     RECOVERY = 'RECOVERY', 'Under Recovery'
     CLOSED = 'CLOSED', 'Closed'
 
+class ScheduleStatus(models.TextChoices):
+    PENDING = 'PENDING', 'Pending'
+    PARTIALLY_PAID = 'PARTIALLY_PAID', 'Partially Paid'
+    PAID = 'PAID', 'Paid'
+    OVERDUE = 'OVERDUE', 'Overdue'
+
 class LoanProduct(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name='loan_products', db_index=True)
@@ -42,6 +48,11 @@ class LoanProduct(models.Model):
     class Meta:
         db_table = 'loan_products'
         unique_together = ('tenant', 'code')
+        ordering = ['-created_at']
+        constraints = [
+            models.CheckConstraint(check=models.Q(interest_rate_pa__gte=0) & models.Q(interest_rate_pa__lte=100), name='chk_loan_interest_rate_range'),
+            models.CheckConstraint(check=models.Q(min_amount__gte=0), name='chk_loan_min_amt'),
+        ]
 
     def __str__(self):
         return f"{self.name} ({self.interest_rate_pa}%)"
@@ -92,6 +103,7 @@ class LoanAccount(models.Model):
     outstanding_principal = models.DecimalField(max_digits=18, decimal_places=2)
     outstanding_interest = models.DecimalField(max_digits=18, decimal_places=2, default=0.00)
     overdue_amount = models.DecimalField(max_digits=18, decimal_places=2, default=0.00)
+    excess_credit = models.DecimalField(max_digits=18, decimal_places=2, default=0.00)
     
     loan_status = models.CharField(max_length=20, choices=LoanAccountStatus.choices, default=LoanAccountStatus.CURRENT, db_index=True)
     next_due_date = models.DateField(null=True, blank=True)
@@ -100,9 +112,40 @@ class LoanAccount(models.Model):
         db_table = 'loan_accounts'
         unique_together = ('tenant', 'account_number')
         ordering = ['-disbursed_date']
+        constraints = [
+            models.CheckConstraint(check=models.Q(outstanding_principal__gte=0), name='chk_loan_principal_pos'),
+            models.CheckConstraint(check=models.Q(outstanding_interest__gte=0), name='chk_loan_interest_pos'),
+            models.CheckConstraint(check=models.Q(excess_credit__gte=0), name='chk_loan_excess_pos'),
+        ]
 
     def __str__(self):
         return f"Loan {self.account_number} - Bal: ₹{self.outstanding_principal}"
+
+class LoanRepaymentSchedule(models.Model):
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    tenant = models.ForeignKey(Tenant, on_delete=models.CASCADE, related_name='loan_schedules', db_index=True)
+    loan_account = models.ForeignKey(LoanAccount, on_delete=models.CASCADE, related_name='schedules')
+    
+    installment_number = models.IntegerField()
+    due_date = models.DateField()
+    principal_due = models.DecimalField(max_digits=18, decimal_places=2)
+    interest_due = models.DecimalField(max_digits=18, decimal_places=2)
+    total_due = models.DecimalField(max_digits=18, decimal_places=2)
+    
+    principal_paid = models.DecimalField(max_digits=18, decimal_places=2, default=0.00)
+    interest_paid = models.DecimalField(max_digits=18, decimal_places=2, default=0.00)
+    penalty_paid = models.DecimalField(max_digits=18, decimal_places=2, default=0.00)
+    
+    status = models.CharField(max_length=20, choices=ScheduleStatus.choices, default=ScheduleStatus.PENDING, db_index=True)
+    paid_date = models.DateField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'loan_repayment_schedules'
+        unique_together = ('loan_account', 'installment_number')
+        ordering = ['installment_number']
+
+    def __str__(self):
+        return f"Inst #{self.installment_number} - {self.loan_account.account_number} (Due: {self.due_date})"
 
 class LoanRepayment(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -115,6 +158,7 @@ class LoanRepayment(models.Model):
     principal_component = models.DecimalField(max_digits=18, decimal_places=2)
     interest_component = models.DecimalField(max_digits=18, decimal_places=2)
     penalty_component = models.DecimalField(max_digits=18, decimal_places=2, default=0.00)
+    excess_component = models.DecimalField(max_digits=18, decimal_places=2, default=0.00)
     
     payment_mode = models.CharField(max_length=30, default='CASH')
     payment_date = models.DateTimeField(auto_now_add=True)
@@ -123,3 +167,6 @@ class LoanRepayment(models.Model):
     class Meta:
         db_table = 'loan_repayments'
         ordering = ['-payment_date']
+        constraints = [
+            models.CheckConstraint(check=models.Q(total_paid__gt=0), name='chk_repayment_positive'),
+        ]

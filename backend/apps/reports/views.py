@@ -53,8 +53,12 @@ class DashboardMetricsView(APIView):
                     'active_loans_count': 0
                 })
 
-            share_acc = ShareAccount.objects.filter(member=member).first()
-            savings_acc = SavingsAccount.objects.filter(member=member).first()
+            from apps.deposits.services import ensure_member_financial_accounts
+            savings_acc, share_acc = ensure_member_financial_accounts(member)
+            if not share_acc:
+                share_acc = ShareAccount.objects.filter(member=member).first()
+            if not savings_acc:
+                savings_acc = SavingsAccount.objects.filter(member=member).first()
             loans = LoanAccount.objects.filter(member=member)
             total_outstanding = loans.aggregate(Sum('outstanding_principal'))['outstanding_principal__sum'] or Decimal(0)
             pending_loans = LoanApplication.objects.filter(member=member, status='SUBMITTED').count()

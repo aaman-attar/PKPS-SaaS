@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { 
   ShieldCheck, Lock, User as UserIcon, KeyRound, ArrowRight, 
@@ -9,12 +9,18 @@ import {
 export const LoginPage: React.FC = () => {
   const { login, verifyOTP } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const paramUsername = searchParams.get('username') || '';
 
-  const [username, setUsername] = useState('admin');
-  const [password, setPassword] = useState('Admin@123');
+  const isDemoMode = import.meta.env.VITE_DEMO_MODE === 'true';
+
+  const [username, setUsername] = useState(paramUsername || (isDemoMode ? 'admin' : ''));
+  const [password, setPassword] = useState(isDemoMode ? 'Admin@123' : '');
+
   const [otpCode, setOtpCode] = useState('');
   const [isOtpStep, setIsOtpStep] = useState(false);
   const [mfaMsg, setMfaMsg] = useState('');
+  const [devOtp, setDevOtp] = useState<string | null>(null); // Only set when FAST2SMS_ENABLED=False
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [resending, setResending] = useState(false);
@@ -27,13 +33,18 @@ export const LoginPage: React.FC = () => {
     try {
       const res = await login(username, password);
       if (res.mfa_required) {
+        if (res.username) {
+          setUsername(res.username);
+        }
         setIsOtpStep(true);
         setMfaMsg(res.message);
+        setDevOtp(res.dev_otp ?? null);
       } else {
         redirectBasedOnRole(res.user.role);
       }
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Invalid username or password.');
+      const errDetail = err.response?.data?.detail;
+      setError(Array.isArray(errDetail) ? errDetail.join(' ') : (errDetail || 'Invalid username or password.'));
     } finally {
       setLoading(false);
     }
@@ -48,7 +59,8 @@ export const LoginPage: React.FC = () => {
       const res = await verifyOTP(username, otpCode);
       redirectBasedOnRole(res.user.role);
     } catch (err: any) {
-      setError(err.response?.data?.detail || 'Invalid OTP verification code.');
+      const errDetail = err.response?.data?.detail;
+      setError(Array.isArray(errDetail) ? errDetail.join(' ') : (errDetail || 'Invalid OTP verification code.'));
     } finally {
       setLoading(false);
     }
@@ -61,6 +73,7 @@ export const LoginPage: React.FC = () => {
       const res = await login(username, password);
       if (res.message) {
         setMfaMsg(res.message);
+        setDevOtp(res.dev_otp ?? null);
       }
     } catch (err: any) {
       setError('Could not resend OTP. Please check credentials.');
@@ -212,6 +225,26 @@ export const LoginPage: React.FC = () => {
               </div>
             )}
 
+            {/* Dev Mode OTP Display — only shown when FAST2SMS_ENABLED=False */}
+            {devOtp && (
+              <div className="rounded-2xl border-2 border-amber-400/60 bg-amber-500/10 p-4 text-center space-y-1.5 shadow-lg shadow-amber-500/10">
+                <div className="flex items-center justify-center gap-2 text-amber-400 text-xs font-bold uppercase tracking-widest">
+                  <KeyRound className="w-4 h-4" />
+                  <span>Dev Mode — OTP Code</span>
+                </div>
+                <div
+                  className="text-4xl font-extrabold tracking-[0.35em] text-amber-300 font-mono cursor-pointer select-all"
+                  title="Click to select"
+                  onClick={() => setOtpCode(devOtp)}
+                >
+                  {devOtp}
+                </div>
+                <p className="text-[11px] text-amber-500/80">
+                  Click the code to auto-fill · FAST2SMS_ENABLED=False
+                </p>
+              </div>
+            )}
+
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label htmlFor="login-otpCode" className="block text-xs font-bold uppercase tracking-wider text-slate-300">
@@ -224,7 +257,7 @@ export const LoginPage: React.FC = () => {
                   className="text-xs font-semibold text-emerald-400 hover:text-emerald-300 flex items-center space-x-1 transition disabled:opacity-50"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${resending ? 'animate-spin' : ''}`} />
-                  <span>{resending ? 'Sending...' : 'Resend SMS OTP'}</span>
+                  <span>{resending ? 'Sending...' : 'Resend OTP'}</span>
                 </button>
               </div>
 
@@ -245,7 +278,9 @@ export const LoginPage: React.FC = () => {
                 />
               </div>
               <p className="text-[11px] text-slate-400 mt-1.5 text-center">
-                SMS sent via <strong className="text-slate-200">Fast2SMS Gateway</strong>. Valid for 5 minutes.
+                {devOtp
+                  ? <><strong className="text-amber-400">Simulation mode</strong> · Click the code above to auto-fill · Valid 5 min</>
+                  : <>SMS sent via <strong className="text-slate-200">Fast2SMS Gateway</strong> · Valid for 5 minutes.</>}
               </p>
             </div>
 
@@ -272,38 +307,41 @@ export const LoginPage: React.FC = () => {
         )}
 
         {/* Demo Roles Shortcut Buttons */}
-        <div className="mt-7 pt-5 border-t border-slate-800/80">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Quick Demo Login:</span>
-            <span className="text-[11px] text-emerald-400 font-medium">Click to Auto-fill</span>
+        {isDemoMode && (
+          <div className="mt-7 pt-5 border-t border-slate-800/80">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Quick Demo Login:</span>
+              <span className="text-[11px] text-emerald-400 font-medium">Click to Auto-fill</span>
+            </div>
+
+            <div className="grid grid-cols-3 gap-2">
+              <button
+                onClick={() => quickLoginAs('admin', 'Admin@123')}
+                className="p-2.5 rounded-xl bg-gradient-to-b from-blue-950/80 to-slate-900 hover:from-blue-900/90 text-blue-300 border border-blue-500/30 hover:border-blue-400 text-xs font-semibold shadow transition transform hover:-translate-y-0.5 flex flex-col items-center justify-center text-center group"
+              >
+                <span className="w-2 h-2 rounded-full bg-blue-400 mb-1 group-hover:scale-125 transition"></span>
+                <span>SaaS Admin</span>
+              </button>
+
+              <button
+                onClick={() => quickLoginAs('pkps_admin', 'PkpsAdmin@123')}
+                className="p-2.5 rounded-xl bg-gradient-to-b from-emerald-950/80 to-slate-900 hover:from-emerald-900/90 text-emerald-300 border border-emerald-500/30 hover:border-emerald-400 text-xs font-semibold shadow transition transform hover:-translate-y-0.5 flex flex-col items-center justify-center text-center group"
+              >
+                <span className="w-2 h-2 rounded-full bg-emerald-400 mb-1 group-hover:scale-125 transition"></span>
+                <span>PKPS Admin</span>
+              </button>
+
+              <button
+                onClick={() => quickLoginAs('farmer_ramesh', 'Farmer@123')}
+                className="p-2.5 rounded-xl bg-gradient-to-b from-amber-950/80 to-slate-900 hover:from-amber-900/90 text-amber-300 border border-amber-500/30 hover:border-amber-400 text-xs font-semibold shadow transition transform hover:-translate-y-0.5 flex flex-col items-center justify-center text-center group"
+              >
+                <span className="w-2 h-2 rounded-full bg-amber-400 mb-1 group-hover:scale-125 transition"></span>
+                <span>Farmer Ramesh</span>
+              </button>
+            </div>
           </div>
+        )}
 
-          <div className="grid grid-cols-3 gap-2">
-            <button
-              onClick={() => quickLoginAs('admin', 'Admin@123')}
-              className="p-2.5 rounded-xl bg-gradient-to-b from-blue-950/80 to-slate-900 hover:from-blue-900/90 text-blue-300 border border-blue-500/30 hover:border-blue-400 text-xs font-semibold shadow transition transform hover:-translate-y-0.5 flex flex-col items-center justify-center text-center group"
-            >
-              <span className="w-2 h-2 rounded-full bg-blue-400 mb-1 group-hover:scale-125 transition"></span>
-              <span>SaaS Admin</span>
-            </button>
-
-            <button
-              onClick={() => quickLoginAs('pkps_admin', 'PkpsAdmin@123')}
-              className="p-2.5 rounded-xl bg-gradient-to-b from-emerald-950/80 to-slate-900 hover:from-emerald-900/90 text-emerald-300 border border-emerald-500/30 hover:border-emerald-400 text-xs font-semibold shadow transition transform hover:-translate-y-0.5 flex flex-col items-center justify-center text-center group"
-            >
-              <span className="w-2 h-2 rounded-full bg-emerald-400 mb-1 group-hover:scale-125 transition"></span>
-              <span>PKPS Admin</span>
-            </button>
-
-            <button
-              onClick={() => quickLoginAs('farmer_ramesh', 'Farmer@123')}
-              className="p-2.5 rounded-xl bg-gradient-to-b from-amber-950/80 to-slate-900 hover:from-amber-900/90 text-amber-300 border border-amber-500/30 hover:border-amber-400 text-xs font-semibold shadow transition transform hover:-translate-y-0.5 flex flex-col items-center justify-center text-center group"
-            >
-              <span className="w-2 h-2 rounded-full bg-amber-400 mb-1 group-hover:scale-125 transition"></span>
-              <span>Farmer Ramesh</span>
-            </button>
-          </div>
-        </div>
       </main>
 
       {/* Footer Branding */}

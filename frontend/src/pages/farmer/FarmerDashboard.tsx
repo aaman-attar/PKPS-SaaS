@@ -196,43 +196,43 @@ export const FarmerDashboard: React.FC = () => {
         {/* Main Metrics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Shares Card */}
-          <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl hover:border-emerald-500/40 transition">
+          <Link to="/farmer/savings" className="bg-slate-900 border border-slate-800 p-6 rounded-3xl hover:border-purple-500/40 transition group">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase text-slate-400">Share Capital</span>
+              <span className="text-xs font-semibold uppercase text-slate-400 group-hover:text-purple-400 transition">Share Capital</span>
               <Landmark className="w-6 h-6 text-purple-400" />
             </div>
-            <div className="text-3xl font-bold text-purple-400 mt-4">
-              ₹{metrics?.shares_amount || '5,000'}
+            <div className="text-3xl font-extrabold text-purple-400 mt-4">
+              ₹{metrics?.shares_amount !== undefined ? Number(metrics.shares_amount).toLocaleString('en-IN') : '0'}
             </div>
-            <p className="text-xs text-slate-500 mt-2">50 Shares @ ₹100/unit</p>
-          </div>
+            <p className="text-xs text-slate-500 mt-2">Cooperative Member Capital Holding</p>
+          </Link>
 
           {/* Savings Card */}
-          <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl hover:border-emerald-500/40 transition">
+          <Link to="/farmer/savings" className="bg-slate-900 border border-slate-800 p-6 rounded-3xl hover:border-teal-500/40 transition group">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase text-slate-400">Thrift Savings</span>
+              <span className="text-xs font-semibold uppercase text-slate-400 group-hover:text-teal-400 transition">Thrift Savings</span>
               <PiggyBank className="w-6 h-6 text-teal-400" />
             </div>
-            <div className="text-3xl font-bold text-teal-400 mt-4">
-              ₹{metrics?.savings_balance || '12,500'}
+            <div className="text-3xl font-extrabold text-teal-400 mt-4">
+              ₹{metrics?.savings_balance !== undefined ? Number(metrics.savings_balance).toLocaleString('en-IN') : '0'}
             </div>
-            <p className="text-xs text-slate-500 mt-2">Annual Yield @ 4.00% p.a.</p>
-          </div>
+            <p className="text-xs text-slate-500 mt-2">Annual Yield @ 4.00% p.a. • Passbook</p>
+          </Link>
 
           {/* Loan Outstanding Card */}
-          <div className="bg-slate-900 border border-slate-800 p-6 rounded-3xl hover:border-emerald-500/40 transition">
+          <Link to="/farmer/loans" className="bg-slate-900 border border-slate-800 p-6 rounded-3xl hover:border-emerald-500/40 transition group">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-semibold uppercase text-slate-400">Loan Outstanding</span>
+              <span className="text-xs font-semibold uppercase text-slate-400 group-hover:text-emerald-400 transition">Active Loans</span>
               <CreditCard className="w-6 h-6 text-emerald-400" />
             </div>
-            <div className="text-3xl font-bold text-emerald-400 mt-4">
-              ₹{metrics?.loan_outstanding || '42,000'}
+            <div className="text-3xl font-extrabold text-emerald-400 mt-4">
+              ₹{metrics?.loan_outstanding !== undefined ? Number(metrics.loan_outstanding).toLocaleString('en-IN') : '0'}
             </div>
-            <div className="flex items-center space-x-2 text-xs text-amber-400 mt-2">
-              <Calendar className="w-4 h-4" />
-              <span>Next Due Date: 15 Oct 2026</span>
+            <div className="flex items-center space-x-2 text-xs text-slate-400 mt-2">
+              <Calendar className="w-4 h-4 text-emerald-400" />
+              <span>{metrics?.active_loans_count || 0} Active Loan Account(s)</span>
             </div>
-          </div>
+          </Link>
         </div>
 
         {/* Quick Self-Service Links */}
@@ -242,8 +242,8 @@ export const FarmerDashboard: React.FC = () => {
             className="p-6 rounded-3xl bg-slate-900 border border-slate-800 hover:border-emerald-500/50 flex items-center justify-between group transition"
           >
             <div className="space-y-1">
-              <h3 className="font-semibold text-slate-100 group-hover:text-emerald-400 transition">Track Loan Applications</h3>
-              <p className="text-xs text-slate-400">View loan approval progress and repayment history</p>
+              <h3 className="font-semibold text-slate-100 group-hover:text-emerald-400 transition">Loan Facilities & Tracker</h3>
+              <p className="text-xs text-slate-400">Apply for seasonal crop loans (KCC) and check installment schedules</p>
             </div>
             <ArrowRight className="w-6 h-6 text-slate-500 group-hover:text-emerald-400 group-hover:translate-x-1 transition" />
           </Link>
@@ -253,8 +253,8 @@ export const FarmerDashboard: React.FC = () => {
             className="p-6 rounded-3xl bg-slate-900 border border-slate-800 hover:border-teal-500/50 flex items-center justify-between group transition"
           >
             <div className="space-y-1">
-              <h3 className="font-semibold text-slate-100 group-hover:text-teal-400 transition">Savings & Share Statements</h3>
-              <p className="text-xs text-slate-400">Inspect thrift balance and share dividend records</p>
+              <h3 className="font-semibold text-slate-100 group-hover:text-teal-400 transition">Savings, Shares & Fixed Deposits (FD)</h3>
+              <p className="text-xs text-slate-400">Deposit savings, open high-yield FDs, and buy cooperative shares</p>
             </div>
             <ArrowRight className="w-6 h-6 text-slate-500 group-hover:text-teal-400 group-hover:translate-x-1 transition" />
           </Link>

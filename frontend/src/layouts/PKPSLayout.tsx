@@ -4,7 +4,8 @@ import { useAuth } from '../context/AuthContext';
 import { 
   Building, Users, CreditCard, Landmark, PiggyBank, BookOpen, 
   ShieldCheck, LogOut, LayoutDashboard, PanelLeftClose, PanelLeftOpen,
-  Menu, X, Sparkles, ClipboardCheck
+  Menu, X, Sparkles, ClipboardCheck, Award, FileText, Bell, FileSpreadsheet,
+  Layers
 } from 'lucide-react';
 
 export const PKPSLayout: React.FC = () => {
@@ -27,8 +28,14 @@ export const PKPSLayout: React.FC = () => {
     { label: 'Share Capital', path: '/pkps/shares', icon: Landmark },
     { label: 'Deposits & Savings', path: '/pkps/deposits', icon: PiggyBank },
     { label: 'Financial Accounting', path: '/pkps/accounting', icon: BookOpen },
+    { label: 'Governance & Board', path: '/pkps/governance', icon: Award },
+    { label: 'Documents Repo', path: '/pkps/documents', icon: FileText },
+    { label: 'Notifications', path: '/pkps/notifications', icon: Bell },
+    { label: 'Financial Reports', path: '/pkps/reports', icon: FileSpreadsheet },
     { label: 'Audit Trail', path: '/pkps/audit', icon: ShieldCheck },
+    { label: 'Blockchain Ledger', path: '/pkps/blockchain', icon: Layers },
   ];
+
 
 
   return (
