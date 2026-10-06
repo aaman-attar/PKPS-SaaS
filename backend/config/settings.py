@@ -11,12 +11,16 @@ dotenv.load_dotenv(BASE_DIR / '.env')
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-pkps-saas-key-2026-production-ready-secret')
 DEBUG = os.getenv('DEBUG', 'True').lower() in ('true', '1', 't')
 
-ALLOWED_HOSTS = [host.strip() for host in os.getenv('ALLOWED_HOSTS', '*').split(',') if host.strip()]
-if '*' not in ALLOWED_HOSTS:
-    ALLOWED_HOSTS.extend(['localhost', '127.0.0.1', '.onrender.com'])
-    RENDER_EXTERNAL_HOSTNAME = os.getenv('RENDER_EXTERNAL_HOSTNAME')
-    if RENDER_EXTERNAL_HOSTNAME and RENDER_EXTERNAL_HOSTNAME not in ALLOWED_HOSTS:
-        ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+if DEBUG:
+    ALLOWED_HOSTS = ['*']
+else:
+    raw_hosts = os.getenv('ALLOWED_HOSTS', '*').split(',')
+    ALLOWED_HOSTS = [h.strip() for h in raw_hosts if h.strip()]
+    if '*' not in ALLOWED_HOSTS:
+        ALLOWED_HOSTS.extend(['localhost', '127.0.0.1', '.onrender.com'])
+        RENDER_EXTERNAL_HOSTNAME = os.getenv('RENDER_EXTERNAL_HOSTNAME')
+        if RENDER_EXTERNAL_HOSTNAME and RENDER_EXTERNAL_HOSTNAME not in ALLOWED_HOSTS:
+            ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
 
 INSTALLED_APPS = [
     'django.contrib.admin',
