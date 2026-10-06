@@ -11,8 +11,18 @@ export const api = axios.create({
 
 api.interceptors.request.use(
   (config) => {
+    // Avoid sending stale Bearer token to unauthenticated public endpoints
+    const isPublicAuthEndpoint =
+      config.url?.includes('/auth/login/') ||
+      config.url?.includes('/auth/register/') ||
+      config.url?.includes('/auth/otp/') ||
+      config.url?.includes('/auth/verify-otp/') ||
+      config.url?.includes('/auth/farmer/') ||
+      config.url?.includes('/tenants/activate/') ||
+      config.url?.includes('/tenants/invitation/');
+
     const token = localStorage.getItem('access_token');
-    if (token) {
+    if (token && !isPublicAuthEndpoint) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;

@@ -24,6 +24,7 @@ class RequestOTPView(APIView):
     purpose: 'REGISTRATION' -> Sends verification OTP to new mobile number.
     """
     permission_classes = [permissions.AllowAny]
+    authentication_classes = []
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = 'login'
 
@@ -119,6 +120,7 @@ class FarmerOTPLoginView(APIView):
     Direct passwordless mobile OTP login for Farmers.
     """
     permission_classes = [permissions.AllowAny]
+    authentication_classes = []
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = 'otp_verify'
 
@@ -171,6 +173,7 @@ class FarmerOTPLoginView(APIView):
 
 class RegisterFarmerView(APIView):
     permission_classes = [permissions.AllowAny]
+    authentication_classes = []
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = 'login'
 
@@ -195,6 +198,7 @@ class RegisterFarmerView(APIView):
 
 class LoginView(APIView):
     permission_classes = [permissions.AllowAny]
+    authentication_classes = []
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = 'login'
 
@@ -262,6 +266,7 @@ class LoginView(APIView):
 
 class VerifyOTPView(APIView):
     permission_classes = [permissions.AllowAny]
+    authentication_classes = []
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = 'otp_verify'
 

@@ -397,6 +397,7 @@ class ActivateAccountView(APIView):
     POST /api/v1/tenants/activate/
     """
     permission_classes = [permissions.AllowAny]
+    authentication_classes = []
 
     def post(self, request):
         raw_token = request.data.get('token', '').strip()
@@ -458,6 +459,7 @@ class ValidateInvitationView(APIView):
     GET /api/v1/tenants/invitation/?token=<raw_token>
     """
     permission_classes = [permissions.AllowAny]
+    authentication_classes = []
 
     def get(self, request):
         raw_token = request.query_params.get('token', '').strip()

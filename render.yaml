@@ -18,6 +18,10 @@ services:
         value: 3.11.0
       - key: CORS_ALLOW_ALL_ORIGINS
         value: "False"
+      - key: FAST2SMS_ENABLED
+        value: "False"
+      - key: FAST2SMS_API_KEY
+        sync: false
 
   # 2. React Vite Frontend Static Site
   - type: web

@@ -45,8 +45,10 @@ If you prefer to create each service manually on Render:
 4. Add **Environment Variables**:
    - `SECRET_KEY`: `your-random-secret-key`
    - `DEBUG`: `False`
-   - `USE_SQLITE`: `True`
+   - `DATABASE_URL`: `your-database-connection-url`
    - `CORS_ALLOWED_ORIGINS`: `https://pkps-saas-frontend.onrender.com` (replace with your frontend URL once created)
+   - `FAST2SMS_ENABLED`: `False` (leave `False` to show OTP directly on the Login/Register screens; set to `True` when using real SMS delivery)
+   - `FAST2SMS_API_KEY`: `your-fast2sms-api-key` (only required when `FAST2SMS_ENABLED=True`)
 5. Click **Create Web Service**. Note down your Backend URL (e.g. `https://pkps-saas-backend.onrender.com`).
 
 ---
