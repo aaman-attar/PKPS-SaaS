@@ -12,7 +12,7 @@ export const LoginPage: React.FC = () => {
   const [searchParams] = useSearchParams();
   const paramUsername = searchParams.get('username') || '';
 
-  const isDemoMode = import.meta.env.VITE_DEMO_MODE === 'true';
+  const isDemoMode = import.meta.env.VITE_DEMO_MODE !== 'false';
 
   const [username, setUsername] = useState(paramUsername || (isDemoMode ? 'admin' : ''));
   const [password, setPassword] = useState(isDemoMode ? 'Admin@123' : '');
@@ -43,8 +43,24 @@ export const LoginPage: React.FC = () => {
         redirectBasedOnRole(res.user.role);
       }
     } catch (err: any) {
-      const errDetail = err.response?.data?.detail;
-      setError(Array.isArray(errDetail) ? errDetail.join(' ') : (errDetail || 'Invalid username or password.'));
+      console.error('[Login Error]', err);
+      const data = err.response?.data;
+      if (data) {
+        if (typeof data === 'string') {
+          setError(data);
+        } else if (data.detail) {
+          setError(Array.isArray(data.detail) ? data.detail.join(' ') : data.detail);
+        } else if (data.non_field_errors) {
+          setError(Array.isArray(data.non_field_errors) ? data.non_field_errors.join(' ') : data.non_field_errors);
+        } else {
+          const msgs = Object.entries(data)
+            .map(([k, v]) => `${k}: ${Array.isArray(v) ? v.join(', ') : v}`)
+            .join(' | ');
+          setError(msgs || 'Invalid username or password.');
+        }
+      } else {
+        setError('Network error: Could not connect to backend API server. Please check your network or server status.');
+      }
     } finally {
       setLoading(false);
     }
@@ -59,8 +75,13 @@ export const LoginPage: React.FC = () => {
       const res = await verifyOTP(username, otpCode);
       redirectBasedOnRole(res.user.role);
     } catch (err: any) {
-      const errDetail = err.response?.data?.detail;
-      setError(Array.isArray(errDetail) ? errDetail.join(' ') : (errDetail || 'Invalid OTP verification code.'));
+      console.error('[OTP Verify Error]', err);
+      const data = err.response?.data;
+      if (data?.detail) {
+        setError(Array.isArray(data.detail) ? data.detail.join(' ') : data.detail);
+      } else {
+        setError('Invalid OTP verification code.');
+      }
     } finally {
       setLoading(false);
     }

@@ -204,7 +204,9 @@ class LoginView(APIView):
 
     def post(self, request):
         serializer = CustomTokenObtainPairSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        if not serializer.is_valid():
+            print(f"[LOGIN FAILED] username={request.data.get('username')!r}, errors={serializer.errors}")
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         user = serializer.validated_data['user']
 
         # Check if 2FA/MFA is required (now enforced for all roles including Farmer)
