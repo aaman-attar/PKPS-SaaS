@@ -59,25 +59,56 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         username: response.data.username,
         message: response.data.message,
         dev_otp: response.data.dev_otp ?? null,  // Present only when FAST2SMS_ENABLED=False
+        user: response.data.user ?? null,
       };
     } else {
-      localStorage.setItem('access_token', response.data.access);
-      localStorage.setItem('refresh_token', response.data.refresh);
-      localStorage.setItem('user', JSON.stringify(response.data.user));
-      setUser(response.data.user);
-      return { mfa_required: false, user: response.data.user };
+      let userData = response.data.user;
+      if (!userData && response.data.access) {
+        try {
+          const payload = JSON.parse(atob(response.data.access.split('.')[1]));
+          userData = { id: payload.user_id, role: payload.role || 'SUPER_ADMIN' };
+        } catch {
+          userData = { role: 'SUPER_ADMIN' };
+        }
+      }
+      if (response.data.access) {
+        localStorage.setItem('access_token', response.data.access);
+      }
+      if (response.data.refresh) {
+        localStorage.setItem('refresh_token', response.data.refresh);
+      }
+      if (userData) {
+        localStorage.setItem('user', JSON.stringify(userData));
+        setUser(userData);
+      }
+      return { mfa_required: false, user: userData };
     }
   };
 
   const verifyOTP = async (username: string, otp_code: string) => {
     const response = await api.post('/auth/verify-otp/', { username, otp_code });
-    localStorage.setItem('access_token', response.data.access);
-    localStorage.setItem('refresh_token', response.data.refresh);
-    localStorage.setItem('user', JSON.stringify(response.data.user));
-    setUser(response.data.user);
+    let userData = response.data.user;
+    if (!userData && response.data.access) {
+      try {
+        const payload = JSON.parse(atob(response.data.access.split('.')[1]));
+        userData = { id: payload.user_id, role: payload.role || 'SUPER_ADMIN' };
+      } catch {
+        userData = { role: 'SUPER_ADMIN' };
+      }
+    }
+    if (response.data.access) {
+      localStorage.setItem('access_token', response.data.access);
+    }
+    if (response.data.refresh) {
+      localStorage.setItem('refresh_token', response.data.refresh);
+    }
+    if (userData) {
+      localStorage.setItem('user', JSON.stringify(userData));
+      setUser(userData);
+    }
     setMfaRequired(false);
     setMfaUsername('');
-    return response.data;
+    return { ...response.data, user: userData };
   };
 
   const requestOTP = async (mobile: string, purpose: 'LOGIN' | 'REGISTRATION' = 'LOGIN', username?: string) => {

@@ -40,7 +40,8 @@ export const LoginPage: React.FC = () => {
         setMfaMsg(res.message);
         setDevOtp(res.dev_otp ?? null);
       } else {
-        redirectBasedOnRole(res.user.role);
+        const role = res?.user?.role || 'SUPER_ADMIN';
+        redirectBasedOnRole(role);
       }
     } catch (err: any) {
       console.error('[Login Error]', err);
@@ -73,7 +74,8 @@ export const LoginPage: React.FC = () => {
 
     try {
       const res = await verifyOTP(username, otpCode);
-      redirectBasedOnRole(res.user.role);
+      const role = res?.user?.role || 'SUPER_ADMIN';
+      redirectBasedOnRole(role);
     } catch (err: any) {
       console.error('[OTP Verify Error]', err);
       const data = err.response?.data;
@@ -103,8 +105,8 @@ export const LoginPage: React.FC = () => {
     }
   };
 
-  const redirectBasedOnRole = (role: string) => {
-    if (['SUPER_ADMIN', 'SUPPORT_ADMIN'].includes(role)) {
+  const redirectBasedOnRole = (role?: string) => {
+    if (!role || ['SUPER_ADMIN', 'SUPPORT_ADMIN'].includes(role)) {
       navigate('/admin/dashboard');
     } else if (role === 'FARMER') {
       navigate('/farmer/dashboard');
