@@ -35,6 +35,11 @@ def seed():
         }
     )
     super_admin.set_password('Admin@123')
+    super_admin.is_active = True
+    super_admin.is_staff = True
+    super_admin.is_superuser = True
+    super_admin.failed_login_attempts = 0
+    super_admin.locked_until = None
     if not super_admin.mobile:
         super_admin.mobile = '9845403249'
     super_admin.save()
@@ -73,6 +78,9 @@ def seed():
         }
     )
     pkps_admin.set_password('PkpsAdmin@123')
+    pkps_admin.is_active = True
+    pkps_admin.failed_login_attempts = 0
+    pkps_admin.locked_until = None
     pkps_admin.save()
     print("  ✓ Configured PKPS Admin: pkps_admin / PkpsAdmin@123")
 
@@ -89,6 +97,9 @@ def seed():
         }
     )
     loan_officer.set_password('Staff@123')
+    loan_officer.is_active = True
+    loan_officer.failed_login_attempts = 0
+    loan_officer.locked_until = None
     loan_officer.save()
     print("  ✓ Configured Loan Officer: loan_officer / Staff@123")
 
@@ -105,6 +116,9 @@ def seed():
         }
     )
     farmer_user.set_password('Farmer@123')
+    farmer_user.is_active = True
+    farmer_user.failed_login_attempts = 0
+    farmer_user.locked_until = None
     farmer_user.save()
     print("  ✓ Configured Farmer User: farmer_ramesh / Farmer@123")
 

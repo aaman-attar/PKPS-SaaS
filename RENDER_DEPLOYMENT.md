@@ -40,8 +40,8 @@ If you prefer to create each service manually on Render:
    - **Name**: `pkps-saas-backend`
    - **Root Directory**: `backend`
    - **Environment**: `Python 3`
-   - **Build Command**: `pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate`
-   - **Start Command**: `gunicorn config.wsgi:application --bind 0.0.0.0:$PORT`
+   - **Build Command**: `pip install -r requirements.txt && python manage.py collectstatic --noinput && python manage.py migrate && python manage.py seed_data`
+   - **Start Command**: `python manage.py migrate && python manage.py seed_data && gunicorn config.wsgi:application --bind 0.0.0.0:$PORT`
 4. Add **Environment Variables**:
    - `SECRET_KEY`: `your-random-secret-key`
    - `DEBUG`: `False`
