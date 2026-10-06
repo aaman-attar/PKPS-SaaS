@@ -95,19 +95,99 @@ class CustomTokenObtainPairSerializer(serializers.Serializer):
         attrs['user'] = user
         return attrs
 
-class OTPVerifySerializer(serializers.Serializer):
-    username = serializers.CharField()
+class RequestOTPSerializer(serializers.Serializer):
+    mobile = serializers.CharField(max_length=20)
+    purpose = serializers.ChoiceField(choices=['LOGIN', 'REGISTRATION'], default='LOGIN')
+    username = serializers.CharField(max_length=150, required=False, allow_blank=True)
+
+    def validate_mobile(self, value):
+        from .sms_service import format_indian_mobile, is_valid_indian_mobile
+        clean = format_indian_mobile(value)
+        if not is_valid_indian_mobile(clean):
+            raise serializers.ValidationError("Please enter a valid 10-digit Indian mobile number.")
+        return clean
+
+
+class FarmerOTPLoginSerializer(serializers.Serializer):
+    mobile = serializers.CharField(max_length=20)
     otp_code = serializers.CharField(max_length=6, min_length=6)
+
+    def validate_mobile(self, value):
+        from .sms_service import format_indian_mobile, is_valid_indian_mobile
+        clean = format_indian_mobile(value)
+        if not is_valid_indian_mobile(clean):
+            raise serializers.ValidationError("Please enter a valid 10-digit Indian mobile number.")
+        return clean
+
+
+class OTPVerifySerializer(serializers.Serializer):
+    username = serializers.CharField(required=False, allow_blank=True)
+    mobile = serializers.CharField(required=False, allow_blank=True)
+    otp_code = serializers.CharField(max_length=6, min_length=6)
+
+    def validate(self, attrs):
+        if not attrs.get('username') and not attrs.get('mobile'):
+            raise serializers.ValidationError("Either username or mobile must be provided.")
+        return attrs
+
 
 class RegisterFarmerSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=6)
+    otp_code = serializers.CharField(write_only=True, min_length=6, max_length=6, required=False, allow_blank=True)
 
     class Meta:
         model = User
-        fields = ('id', 'username', 'email', 'mobile', 'first_name', 'last_name', 'password')
+        fields = ('id', 'username', 'email', 'mobile', 'first_name', 'last_name', 'password', 'otp_code')
+
+    def validate_mobile(self, value):
+        from .sms_service import format_indian_mobile, is_valid_indian_mobile
+        clean = format_indian_mobile(value)
+        if not is_valid_indian_mobile(clean):
+            raise serializers.ValidationError("Please enter a valid 10-digit Indian mobile number.")
+        from django.db.models import Q
+        if User.objects.filter(Q(mobile=clean) | Q(mobile__endswith=clean[-10:])).exists():
+            raise serializers.ValidationError("An account with this mobile number already exists.")
+        return clean
+
+    def validate(self, attrs):
+        from .sms_service import format_indian_mobile
+        clean_mobile = format_indian_mobile(attrs.get('mobile', ''))
+        raw_otp = attrs.get('otp_code', '')
+        otp_code = raw_otp.strip() if raw_otp else ''
+
+        # Check if an OTP device was generated for registration of this mobile
+        device = OTPDevice.objects.filter(
+            mobile=clean_mobile,
+            purpose='REGISTRATION',
+            is_verified=False
+        ).order_by('-created_at').first()
+
+        if device or otp_code:
+            if not device or not device.is_valid():
+                raise serializers.ValidationError({
+                    'otp_code': 'Invalid or expired OTP code. Please request a new OTP.'
+                })
+
+            if not device.verify_input_code(otp_code):
+                remaining = device.max_attempts - device.attempts
+                if remaining > 0:
+                    raise serializers.ValidationError({
+                        'otp_code': f'Invalid OTP code. {remaining} attempt(s) remaining.'
+                    })
+                else:
+                    raise serializers.ValidationError({
+                        'otp_code': 'Maximum failed OTP attempts exceeded. Please request a new OTP.'
+                    })
+
+        attrs['clean_mobile'] = clean_mobile
+        return attrs
 
     def create(self, validated_data):
         password = validated_data.pop('password')
+        validated_data.pop('otp_code', None)
+        clean_mobile = validated_data.pop('clean_mobile', None)
+        if clean_mobile:
+            validated_data['mobile'] = clean_mobile
         validated_data['role'] = UserRole.FARMER
         user = User(**validated_data)
         user.set_password(password)
@@ -127,5 +207,6 @@ class RegisterFarmerSerializer(serializers.ModelSerializer):
             user.save()
 
         return user
+
 
 

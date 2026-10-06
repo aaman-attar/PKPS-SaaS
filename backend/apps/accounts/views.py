@@ -7,33 +7,191 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .models import User, OTPDevice, UserRole
-from .serializers import UserSerializer, CreateUserSerializer, CustomTokenObtainPairSerializer, OTPVerifySerializer, RegisterFarmerSerializer
+from .serializers import (
+    UserSerializer, CreateUserSerializer, CustomTokenObtainPairSerializer,
+    OTPVerifySerializer, RegisterFarmerSerializer, RequestOTPSerializer, FarmerOTPLoginSerializer
+)
 from .sms_provider import get_sms_provider
+from .sms_service import send_sms_otp, format_indian_mobile
 from apps.tenants.permissions import IsPKPSAdmin, validate_tenant_object
 from apps.audit.services import record_audit
+from rest_framework.throttling import ScopedRateThrottle
+
+class RequestOTPView(APIView):
+    """
+    Unified endpoint to request OTP for Login or Registration.
+    purpose: 'LOGIN' -> Sends OTP to existing registered farmer/user.
+    purpose: 'REGISTRATION' -> Sends verification OTP to new mobile number.
+    """
+    permission_classes = [permissions.AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'login'
+
+    def post(self, request):
+        serializer = RequestOTPSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        clean_mobile = serializer.validated_data['mobile']
+        purpose = serializer.validated_data.get('purpose', 'LOGIN')
+
+        from django.db.models import Q
+        user = User.objects.filter(Q(mobile=clean_mobile) | Q(mobile__endswith=clean_mobile[-10:])).first()
+
+        if purpose == 'LOGIN':
+            if not user:
+                return Response({
+                    'detail': f'No account found with mobile number +91 {clean_mobile}. Please register as a farmer first.'
+                }, status=status.HTTP_404_NOT_FOUND)
+
+            if user.is_locked():
+                return Response({
+                    'detail': 'Account is temporarily locked due to multiple failed login attempts. Please try again after 15 minutes.'
+                }, status=status.HTTP_403_FORBIDDEN)
+
+            try:
+                device, raw_otp = OTPDevice.generate_otp(user=user, mobile=clean_mobile, purpose='LOGIN', validity_minutes=5)
+            except ValueError as val_err:
+                record_audit(user, 'LOGIN_OTP_RATE_LIMITED', 'ACCOUNTS', 'User', user.id)
+                return Response({'detail': str(val_err)}, status=status.HTTP_429_TOO_MANY_REQUESTS)
+
+            sms_res = send_sms_otp(clean_mobile, raw_otp)
+            record_audit(user, 'LOGIN_OTP_REQUESTED', 'ACCOUNTS', 'User', user.id)
+
+            fast2sms_enabled = getattr(settings, 'FAST2SMS_ENABLED', False)
+
+            if fast2sms_enabled and not sms_res.get('success'):
+                err_detail = sms_res.get('message', 'Failed to deliver OTP via SMS.')
+                return Response({'detail': err_detail}, status=status.HTTP_400_BAD_REQUEST)
+
+            response_data = {
+                'success': True,
+                'mobile': clean_mobile,
+                'purpose': 'LOGIN',
+                'expires_in_minutes': 5,
+                'message': f'OTP sent successfully via SMS to +91 {clean_mobile[:2]}******{clean_mobile[-2:]}.'
+            }
+            if not fast2sms_enabled:
+                response_data['dev_otp'] = raw_otp
+                response_data['message'] = 'SMS simulation mode active. Enter the 6-digit OTP code below.'
+
+            return Response(response_data, status=status.HTTP_200_OK)
+
+        elif purpose == 'REGISTRATION':
+            username = serializer.validated_data.get('username', '').strip()
+            if username and User.objects.filter(username__iexact=username).exists():
+                return Response({
+                    'detail': f"Username '{username}' is already taken. Please choose another username."
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            if user:
+                return Response({
+                    'detail': f'An account with mobile number +91 {clean_mobile} already exists. Please log in instead.'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+            try:
+                device, raw_otp = OTPDevice.generate_otp(user=None, mobile=clean_mobile, purpose='REGISTRATION', validity_minutes=5)
+            except ValueError as val_err:
+                return Response({'detail': str(val_err)}, status=status.HTTP_429_TOO_MANY_REQUESTS)
+
+            sms_res = send_sms_otp(clean_mobile, raw_otp)
+
+            fast2sms_enabled = getattr(settings, 'FAST2SMS_ENABLED', False)
+
+            if fast2sms_enabled and not sms_res.get('success'):
+                err_detail = sms_res.get('message', 'Failed to deliver OTP via SMS.')
+                return Response({'detail': err_detail}, status=status.HTTP_400_BAD_REQUEST)
+
+            response_data = {
+                'success': True,
+                'mobile': clean_mobile,
+                'purpose': 'REGISTRATION',
+                'expires_in_minutes': 5,
+                'message': f'Verification OTP sent to +91 {clean_mobile[:2]}******{clean_mobile[-2:]}.'
+            }
+            if not fast2sms_enabled:
+                response_data['dev_otp'] = raw_otp
+                response_data['message'] = 'SMS simulation mode active. Enter the 6-digit verification code below.'
+
+            return Response(response_data, status=status.HTTP_200_OK)
+
+
+class FarmerOTPLoginView(APIView):
+    """
+    Direct passwordless mobile OTP login for Farmers.
+    """
+    permission_classes = [permissions.AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'otp_verify'
+
+    def post(self, request):
+        serializer = FarmerOTPLoginSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        clean_mobile = serializer.validated_data['mobile']
+        otp_code = serializer.validated_data['otp_code'].strip()
+
+        from django.db.models import Q
+        user = User.objects.filter(Q(mobile=clean_mobile) | Q(mobile__endswith=clean_mobile[-10:])).first()
+        if not user:
+            return Response({'detail': 'No account found with this mobile number.'}, status=status.HTTP_404_NOT_FOUND)
+
+        if user.is_locked():
+            return Response({'detail': 'Account is temporarily locked. Please try again after 15 minutes.'}, status=status.HTTP_403_FORBIDDEN)
+
+        device = OTPDevice.objects.filter(
+            Q(user=user) | Q(mobile=clean_mobile),
+            purpose='LOGIN',
+            is_verified=False
+        ).order_by('-created_at').first()
+
+        if not device or not device.is_valid():
+            record_audit(user, 'OTP_VERIFICATION_EXPIRED', 'ACCOUNTS', 'User', user.id)
+            return Response({'detail': 'Invalid or expired OTP code. Please request a new OTP.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not device.verify_input_code(otp_code):
+            remaining = device.max_attempts - device.attempts
+            record_audit(user, 'OTP_VERIFICATION_FAILED', 'ACCOUNTS', 'User', user.id, new_values={'attempts': device.attempts})
+            if remaining > 0:
+                return Response({'detail': f'Invalid OTP code. {remaining} attempt(s) remaining.'}, status=status.HTTP_400_BAD_REQUEST)
+            else:
+                return Response({'detail': 'Maximum failed OTP attempts exceeded. Please request a new OTP.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user.reset_failed_logins()
+
+        refresh = RefreshToken.for_user(user)
+        refresh['role'] = user.role
+        refresh['tenant_id'] = str(user.tenant.id) if user.tenant else None
+
+        record_audit(user, 'LOGIN_SUCCESS_OTP', 'ACCOUNTS', 'User', user.id)
+
+        return Response({
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
+            'user': UserSerializer(user).data
+        })
+
 
 class RegisterFarmerView(APIView):
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'login'
 
     def post(self, request):
         serializer = RegisterFarmerSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
 
-        record_audit(user, 'REGISTER_FARMER', 'ACCOUNTS', 'User', user.id)
+        record_audit(user, 'REGISTER_FARMER_SUCCESS', 'ACCOUNTS', 'User', user.id)
 
         refresh = RefreshToken.for_user(user)
         refresh['role'] = user.role
-        refresh['tenant_id'] = None
+        refresh['tenant_id'] = str(user.tenant.id) if user.tenant else None
 
         return Response({
-            'message': 'Farmer registration successful',
+            'message': 'Farmer registration successful! Welcome to PKPS.',
             'access': str(refresh.access_token),
             'refresh': str(refresh),
             'user': UserSerializer(user).data
         }, status=status.HTTP_201_CREATED)
 
-from rest_framework.throttling import ScopedRateThrottle
 
 class LoginView(APIView):
     permission_classes = [permissions.AllowAny]
@@ -45,19 +203,25 @@ class LoginView(APIView):
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data['user']
 
-        # Check if 2FA/MFA is required
-        if user.is_mfa_enabled or user.role in [UserRole.SUPER_ADMIN, UserRole.PKPS_ADMIN, UserRole.SECRETARY, UserRole.MANAGER]:
+        # Check if 2FA/MFA is required (now enforced for all roles including Farmer)
+        if user.is_mfa_enabled or user.role in [
+            UserRole.SUPER_ADMIN, UserRole.PKPS_ADMIN, UserRole.SECRETARY,
+            UserRole.MANAGER, UserRole.FARMER, UserRole.LOAN_OFFICER, UserRole.AUDITOR
+        ]:
             try:
-                device, raw_otp = OTPDevice.generate_otp(user, validity_minutes=5)
+                device, raw_otp = OTPDevice.generate_otp(user=user, mobile=user.mobile, purpose='LOGIN', validity_minutes=5)
             except ValueError as val_err:
                 record_audit(user, 'LOGIN_OTP_RATE_LIMITED', 'ACCOUNTS', 'User', user.id)
                 return Response({'detail': str(val_err)}, status=status.HTTP_429_TOO_MANY_REQUESTS)
 
             sms_target = user.mobile if user.mobile else getattr(settings, 'DEFAULT_TARGET_MOBILE', '')
-            provider = get_sms_provider()
-            provider.send_sms(sms_target, f"Your PKPS verification code is: {raw_otp}")
+            sms_res = send_sms_otp(sms_target, raw_otp)
 
             fast2sms_enabled = getattr(settings, 'FAST2SMS_ENABLED', False)
+
+            if fast2sms_enabled and not sms_res.get('success'):
+                err_detail = sms_res.get('message', 'Failed to deliver OTP via SMS.')
+                return Response({'detail': err_detail}, status=status.HTTP_400_BAD_REQUEST)
 
             if fast2sms_enabled:
                 msg = f"OTP code sent via SMS to mobile ending in {sms_target[-4:] if len(sms_target) >= 4 else sms_target}."
@@ -95,6 +259,7 @@ class LoginView(APIView):
             'user': UserSerializer(user).data
         })
 
+
 class VerifyOTPView(APIView):
     permission_classes = [permissions.AllowAny]
     throttle_classes = [ScopedRateThrottle]
@@ -103,22 +268,37 @@ class VerifyOTPView(APIView):
     def post(self, request):
         serializer = OTPVerifySerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        raw_username = serializer.validated_data['username'].strip()
+        raw_username = serializer.validated_data.get('username', '').strip()
+        raw_mobile = serializer.validated_data.get('mobile', '').strip()
         otp_code = serializer.validated_data['otp_code'].strip()
 
         from django.db.models import Q
-        digits_only = ''.join(c for c in raw_username if c.isdigit())
-        q_filter = Q(username__iexact=raw_username) | Q(email__iexact=raw_username) | Q(mobile=raw_username)
-        if digits_only:
-            q_filter |= Q(mobile=digits_only)
-            if len(digits_only) >= 10:
-                q_filter |= Q(mobile__endswith=digits_only[-10:])
+        q_filter = Q()
+        if raw_username:
+            digits_only = ''.join(c for c in raw_username if c.isdigit())
+            q_filter |= Q(username__iexact=raw_username) | Q(email__iexact=raw_username) | Q(mobile=raw_username)
+            if digits_only:
+                q_filter |= Q(mobile=digits_only)
+                if len(digits_only) >= 10:
+                    q_filter |= Q(mobile__endswith=digits_only[-10:])
+        if raw_mobile:
+            clean_m = format_indian_mobile(raw_mobile)
+            q_filter |= Q(mobile=clean_m) | Q(mobile__endswith=clean_m[-10:])
 
         user = User.objects.filter(q_filter).first()
         if not user:
             return Response({'detail': 'User not found.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        device = OTPDevice.objects.filter(user=user, is_verified=False).order_by('-created_at').first()
+        device = OTPDevice.objects.filter(
+            Q(user=user) | (Q(mobile=user.mobile) if user.mobile else Q()),
+            is_verified=False,
+            purpose='LOGIN'
+        ).order_by('-created_at').first()
+
+        # Fallback to any unverified device for user if purpose wasn't set
+        if not device:
+            device = OTPDevice.objects.filter(user=user, is_verified=False).order_by('-created_at').first()
+
         if not device or not device.is_valid():
             record_audit(user, 'OTP_VERIFICATION_EXPIRED', 'ACCOUNTS', 'User', user.id)
             return Response({'detail': 'Invalid or expired OTP code. Please request a new OTP.'}, status=status.HTTP_400_BAD_REQUEST)
@@ -130,6 +310,8 @@ class VerifyOTPView(APIView):
                 return Response({'detail': f'Invalid OTP code. {remaining_attempts} attempt(s) remaining.'}, status=status.HTTP_400_BAD_REQUEST)
             else:
                 return Response({'detail': 'Maximum failed OTP attempts exceeded. OTP has been invalidated.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user.reset_failed_logins()
 
         refresh = RefreshToken.for_user(user)
         refresh['role'] = user.role

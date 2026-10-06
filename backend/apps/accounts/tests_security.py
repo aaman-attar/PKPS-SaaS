@@ -27,6 +27,8 @@ class SecurityPenetrationTests(TestCase):
     """
 
     def setUp(self):
+        from django.core.cache import cache
+        cache.clear()
         self.client = APIClient()
 
         # 1. Setup Tenant Alpha (Mandya PACS)

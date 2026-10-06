@@ -9,35 +9,12 @@ class BaseSMSProvider(ABC):
         pass
 
 class Fast2SMSProvider(BaseSMSProvider):
-    def __init__(self):
-        self.api_key = getattr(settings, 'FAST2SMS_API_KEY', os.getenv('FAST2SMS_API_KEY', ''))
-        self.url = "https://www.fast2sms.com/dev/bulkV2"
-
     def send_sms(self, mobile_number: str, message: str) -> bool:
-        if not self.api_key:
-            print("[SMS PROVIDER] Fast2SMS API Key missing.")
-            return False
-
-        clean_mobile = mobile_number.replace('+91', '').replace('-', '').strip()
-        headers = {'authorization': self.api_key, 'Content-Type': 'application/json'}
-        payload = {
-            "route": "otp",
-            "variables_values": message,
-            "numbers": clean_mobile,
-        }
-
-        try:
-            res = requests.post(self.url, json=payload, headers=headers, timeout=10)
-            data = res.json()
-            if data.get('return'):
-                print(f"[SMS PROVIDER - Fast2SMS] SMS sent to {clean_mobile}")
-                return True
-            else:
-                print(f"[SMS PROVIDER - Fast2SMS ERROR] {data.get('message')}")
-                return False
-        except Exception as e:
-            print(f"[SMS PROVIDER - Fast2SMS EXCEPTION] {e}")
-            return False
+        from .sms_service import send_sms_otp
+        digits = ''.join(c for c in message if c.isdigit())
+        otp_to_send = digits if (digits and len(digits) == 6) else message
+        res = send_sms_otp(mobile_number, otp_to_send)
+        return res.get('success', False)
 
 class TwilioProvider(BaseSMSProvider):
     def __init__(self):

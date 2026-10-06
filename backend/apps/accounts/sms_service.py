@@ -212,7 +212,6 @@ def send_sms_otp(to_mobile: str, otp_code: str) -> dict:
         "route": "otp",
         "variables_values": otp_code,
         "numbers": clean_mobile,
-        "flash": "0",
     }
 
     try:
@@ -223,6 +222,9 @@ def send_sms_otp(to_mobile: str, otp_code: str) -> dict:
             headers=headers,
             timeout=15,
         )
+
+        otp_err_msg = ""
+        otp_status_code = None
 
         if response.status_code == 200:
             try:
@@ -241,24 +243,34 @@ def send_sms_otp(to_mobile: str, otp_code: str) -> dict:
                         "message": "OTP sent successfully via SMS."
                     }
                 else:
+                    otp_err_msg = data.get("message", "")
+                    otp_status_code = data.get("status_code")
                     logger.warning("Fast2SMS OTP route returned return=False: %s", data)
             except ValueError:
                 pass
+        else:
+            try:
+                err_json = response.json()
+                otp_err_msg = err_json.get("message", response.text[:150])
+                otp_status_code = err_json.get("status_code")
+            except Exception:
+                otp_err_msg = response.text[:150]
 
         # Step 2: Fallback to Quick SMS (route=q) if OTP route failed (e.g. status_code 996 website verification required)
         logger.info(
-            "Fast2SMS OTP route did not succeed (HTTP %s). Attempting Quick SMS (route=q) POST fallback...",
-            response.status_code
+            "Fast2SMS OTP route did not succeed (HTTP %s - %s). Attempting Quick SMS (route=q) POST fallback...",
+            response.status_code,
+            otp_err_msg
         )
 
-        sms_message = f"Your PKPS SaaS Verification OTP Code is: {otp_code}. Valid for 5 minutes."
+        sms_message = f"Your PKPS Verification OTP is {otp_code}. Valid for 5 minutes."
 
         payload_q = {
             "route": "q",
             "message": sms_message,
             "language": "english",
             "numbers": clean_mobile,
-            "flash": "0",
+            "flash": 0,
         }
 
         # Try Quick SMS POST
@@ -298,7 +310,7 @@ def send_sms_otp(to_mobile: str, otp_code: str) -> dict:
             "message": sms_message,
             "language": "english",
             "numbers": clean_mobile,
-            "flash": "0",
+            "flash": 0,
         }
 
         res_q_get = requests.get(
@@ -327,31 +339,51 @@ def send_sms_otp(to_mobile: str, otp_code: str) -> dict:
             except ValueError:
                 pass
 
-        # If all attempts failed, extract error message from best available response
+        # If all attempts failed, inspect errors from best response
         failed_response = response
         if res_q_post.status_code < 500:
             failed_response = res_q_post
         elif res_q_get.status_code < 500:
             failed_response = res_q_get
 
+        raw_err_msg = ""
+        raw_status_code = None
         try:
             err_data = failed_response.json()
-            err_msg = err_data.get("message", failed_response.text[:150])
-            if isinstance(err_msg, list):
-                err_msg = ", ".join(str(i) for i in err_msg)
+            raw_err_msg = err_data.get("message", failed_response.text[:150])
+            raw_status_code = err_data.get("status_code")
+            if isinstance(raw_err_msg, list):
+                raw_err_msg = ", ".join(str(i) for i in raw_err_msg)
         except Exception:
-            err_msg = failed_response.text[:150]
+            raw_err_msg = failed_response.text[:150]
+
+        # Formulate informative error message for user
+        if raw_status_code == 427 or "DND" in str(raw_err_msg):
+            user_message = (
+                f"Mobile number +91{clean_mobile} is registered on TRAI DND. "
+                "Fast2SMS Quick SMS route cannot deliver to DND numbers. "
+                "To deliver OTP to all Indian numbers (including DND), please complete Website Verification in your Fast2SMS dashboard under OTP SMS."
+            )
+        elif otp_status_code == 996 or "website verification" in str(otp_err_msg).lower():
+            user_message = (
+                "Fast2SMS OTP API requires Website Verification in your Fast2SMS dashboard (OTP Message menu). "
+                f"Fallback Quick SMS also failed: {raw_err_msg}"
+            )
+        else:
+            user_message = f"Fast2SMS error: {raw_err_msg}"
 
         logger.error(
-            "Fast2SMS API failed across all routes. Status=%s Body=%s",
+            "Fast2SMS API failed across all routes for +91%s. Status=%s Body=%s. Reason=%s",
+            clean_mobile,
             failed_response.status_code,
-            failed_response.text[:500],
+            failed_response.text[:300],
+            user_message
         )
 
         return {
             "success": False,
             "provider": "Fast2SMS",
-            "message": f"Fast2SMS error (HTTP {failed_response.status_code}): {err_msg}"
+            "message": user_message
         }
 
     # ---------------------------------------------------------

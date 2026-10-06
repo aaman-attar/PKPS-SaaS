@@ -9,6 +9,9 @@ interface AuthContextType {
   mfaUsername: string;
   login: (username: string, password: string) => Promise<any>;
   verifyOTP: (username: string, otp: string) => Promise<any>;
+  requestOTP: (mobile: string, purpose?: 'LOGIN' | 'REGISTRATION', username?: string) => Promise<any>;
+  loginWithOTP: (mobile: string, otp_code: string) => Promise<any>;
+  registerFarmer: (data: any) => Promise<any>;
   logout: () => void;
   refreshUser: () => Promise<void>;
 }
@@ -77,6 +80,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return response.data;
   };
 
+  const requestOTP = async (mobile: string, purpose: 'LOGIN' | 'REGISTRATION' = 'LOGIN', username?: string) => {
+    const payload: any = { mobile, purpose };
+    if (username) payload.username = username;
+    const response = await api.post('/auth/otp/request/', payload);
+    return response.data;
+  };
+
+  const loginWithOTP = async (mobile: string, otp_code: string) => {
+    const response = await api.post('/auth/otp/login/', { mobile, otp_code });
+    localStorage.setItem('access_token', response.data.access);
+    localStorage.setItem('refresh_token', response.data.refresh);
+    localStorage.setItem('user', JSON.stringify(response.data.user));
+    setUser(response.data.user);
+    return response.data;
+  };
+
+  const registerFarmer = async (data: any) => {
+    const response = await api.post('/auth/register/', data);
+    localStorage.setItem('access_token', response.data.access);
+    localStorage.setItem('refresh_token', response.data.refresh);
+    localStorage.setItem('user', JSON.stringify(response.data.user));
+    setUser(response.data.user);
+    return response.data;
+  };
+
   const logout = () => {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
@@ -110,6 +138,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         mfaUsername,
         login,
         verifyOTP,
+        requestOTP,
+        loginWithOTP,
+        registerFarmer,
         logout,
         refreshUser,
       }}
