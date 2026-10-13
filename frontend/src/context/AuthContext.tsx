@@ -14,6 +14,7 @@ interface AuthContextType {
   registerFarmer: (data: any) => Promise<any>;
   logout: () => void;
   refreshUser: () => Promise<void>;
+  isInitializing: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -24,8 +25,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const saved = localStorage.getItem('user');
       if (saved && saved !== 'undefined' && saved !== 'null') {
         const parsed = JSON.parse(saved);
-        if (parsed && parsed.role) parsed.role = String(parsed.role).toUpperCase().trim();
-        return parsed;
+        if (parsed && typeof parsed === 'object' && parsed.role) {
+          parsed.role = String(parsed.role).toUpperCase().trim();
+          return parsed;
+        }
       }
       return null;
     } catch {
@@ -33,6 +36,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   });
 
+  const [isInitializing, setIsInitializing] = useState(true);
   const [mfaRequired, setMfaRequired] = useState(false);
   const [mfaUsername, setMfaUsername] = useState('');
 
@@ -184,8 +188,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
-    if (localStorage.getItem('access_token') && !user) {
-      refreshUser();
+    const token = localStorage.getItem('access_token');
+    if (token) {
+      if (!user || !user.role) {
+        refreshUser().finally(() => setIsInitializing(false));
+      } else {
+        setIsInitializing(false);
+      }
+    } else {
+      setIsInitializing(false);
     }
   }, []);
 
@@ -194,6 +205,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         user,
         isAuthenticated,
+        isInitializing,
         mfaRequired,
         mfaUsername,
         login,

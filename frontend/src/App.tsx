@@ -39,10 +39,19 @@ const getHomeRouteForRole = (role?: string): string => {
 };
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode; allowedRoles?: string[] }> = ({ children, allowedRoles }) => {
-  const { user, isAuthenticated } = useAuth();
+  const { user, isAuthenticated, isInitializing } = useAuth();
   const location = useLocation();
 
-  if (!isAuthenticated || !user) {
+  if (isInitializing) {
+    return (
+      <div className="min-h-screen bg-[#060913] flex flex-col items-center justify-center space-y-3">
+        <div className="w-10 h-10 border-3 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+        <p className="text-xs text-slate-400 font-medium">Verifying authorization...</p>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated || !user || !user.role) {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
@@ -56,17 +65,22 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode; allowedRoles?: strin
     if (location.pathname === targetHome) {
       return (
         <div className="min-h-screen bg-[#060913] text-slate-100 flex items-center justify-center p-6 text-center">
-          <div className="max-w-md p-8 bg-slate-900 border border-red-500/30 rounded-3xl shadow-2xl">
-            <h2 className="text-xl font-bold text-red-400 mb-2">Access Restricted</h2>
-            <p className="text-sm text-slate-400 mb-6">
+          <div className="max-w-md p-8 bg-slate-900 border border-red-500/30 rounded-3xl shadow-2xl space-y-4">
+            <h2 className="text-xl font-bold text-red-400">Access Restricted</h2>
+            <p className="text-sm text-slate-400">
               Your account role ({user.role || 'Unknown'}) does not have permission to access this module.
             </p>
-            <a
-              href="/login"
-              className="inline-block px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-sm transition"
+            <button
+              onClick={() => {
+                localStorage.removeItem('access_token');
+                localStorage.removeItem('refresh_token');
+                localStorage.removeItem('user');
+                window.location.href = '/login';
+              }}
+              className="inline-block px-6 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold text-sm shadow-lg shadow-emerald-600/25 transition cursor-pointer"
             >
               Return to Login
-            </a>
+            </button>
           </div>
         </div>
       );
