@@ -106,12 +106,13 @@ export const LoginPage: React.FC = () => {
   };
 
   const redirectBasedOnRole = (role?: string) => {
-    if (!role || ['SUPER_ADMIN', 'SUPPORT_ADMIN'].includes(role)) {
-      navigate('/admin/dashboard');
-    } else if (role === 'FARMER') {
-      navigate('/farmer/dashboard');
+    const cleanRole = String(role || '').toUpperCase().trim();
+    if (!cleanRole || ['SUPER_ADMIN', 'SUPPORT_ADMIN'].includes(cleanRole)) {
+      navigate('/admin/dashboard', { replace: true });
+    } else if (cleanRole === 'FARMER') {
+      navigate('/farmer/dashboard', { replace: true });
     } else {
-      navigate('/pkps/dashboard');
+      navigate('/pkps/dashboard', { replace: true });
     }
   };
 

@@ -80,12 +80,12 @@ export const PKPSLayout: React.FC = () => {
         {/* User Info & Sign Out */}
         <div className="flex items-center space-x-3 sm:space-x-4">
           <div className="text-right hidden sm:block">
-            <div className="text-sm font-bold text-slate-100">{user?.first_name} {user?.last_name}</div>
-            <div className="text-[11px] text-emerald-400 font-bold tracking-wide uppercase">{user?.role}</div>
+            <div className="text-sm font-bold text-slate-100">{user?.first_name || 'Society'} {user?.last_name || 'User'}</div>
+            <div className="text-[11px] text-emerald-400 font-bold tracking-wide uppercase">{user?.role || 'PKPS_ADMIN'}</div>
           </div>
 
           <div className="w-8 h-8 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 flex items-center justify-center font-bold text-xs sm:hidden">
-            {user?.first_name?.[0] || 'U'}
+            {user?.first_name?.[0] || user?.username?.[0] || 'U'}
           </div>
 
           <button
@@ -147,7 +147,7 @@ export const PKPSLayout: React.FC = () => {
 
               <div className="pt-4 border-t border-slate-800 text-xs text-slate-400">
                 <div className="font-bold text-emerald-400">{user?.tenant?.village || 'Mandya'} Society Branch</div>
-                <div className="text-slate-500 mt-0.5">Tenant Code: {user?.tenant?.code}</div>
+                <div className="text-slate-500 mt-0.5">Tenant Code: {user?.tenant?.code || 'KA-MDY-01'}</div>
               </div>
             </div>
           </div>
@@ -184,7 +184,7 @@ export const PKPSLayout: React.FC = () => {
           {!isCollapsed && (
             <div className="p-3.5 rounded-2xl bg-gradient-to-b from-slate-900 to-slate-950 border border-slate-800 text-xs text-slate-400 space-y-1 shadow">
               <div className="font-bold text-emerald-400">{user?.tenant?.village || 'Mandya'} PACS</div>
-              <div className="text-slate-500 text-[11px]">Tenant ID: {user?.tenant?.code}</div>
+              <div className="text-slate-500 text-[11px]">Tenant ID: {user?.tenant?.code || 'KA-MDY-01'}</div>
             </div>
           )}
         </aside>

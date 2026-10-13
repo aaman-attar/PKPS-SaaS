@@ -64,7 +64,7 @@ export const SuperAdminLayout: React.FC = () => {
         {/* User Info & Log Out */}
         <div className="flex items-center space-x-3">
           <div className="hidden sm:block text-right">
-            <div className="text-sm font-bold text-slate-100">{user?.first_name} {user?.last_name}</div>
+            <div className="text-sm font-bold text-slate-100">{user?.first_name || 'System'} {user?.last_name || 'Administrator'}</div>
             <div className="text-[11px] text-cyan-400 font-bold uppercase tracking-wider">SUPER ADMIN</div>
           </div>
 

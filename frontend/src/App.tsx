@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LoginPage } from './pages/auth/LoginPage';
 import { RegisterPage } from './pages/auth/RegisterPage';
@@ -31,17 +31,48 @@ import { FarmerLoansPage } from './pages/farmer/FarmerLoansPage';
 import { FarmerSavingsPage } from './pages/farmer/FarmerSavingsPage';
 import { ApplyMembershipPage } from './pages/farmer/ApplyMembershipPage';
 
+const getHomeRouteForRole = (role?: string): string => {
+  const normalized = (role || '').toUpperCase().trim();
+  if (['SUPER_ADMIN', 'SUPPORT_ADMIN'].includes(normalized)) return '/admin/dashboard';
+  if (normalized === 'FARMER') return '/farmer/dashboard';
+  return '/pkps/dashboard';
+};
+
 const ProtectedRoute: React.FC<{ children: React.ReactNode; allowedRoles?: string[] }> = ({ children, allowedRoles }) => {
   const { user, isAuthenticated } = useAuth();
+  const location = useLocation();
 
   if (!isAuthenticated || !user) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (allowedRoles && !allowedRoles.includes(user.role)) {
-    if (['SUPER_ADMIN', 'SUPPORT_ADMIN'].includes(user.role)) return <Navigate to="/admin/dashboard" replace />;
-    if (user.role === 'FARMER') return <Navigate to="/farmer/dashboard" replace />;
-    return <Navigate to="/pkps/dashboard" replace />;
+  const normalizedUserRole = (user.role || '').toUpperCase().trim();
+  const normalizedAllowed = allowedRoles?.map((r) => r.toUpperCase().trim());
+
+  if (normalizedAllowed && !normalizedAllowed.includes(normalizedUserRole)) {
+    const targetHome = getHomeRouteForRole(normalizedUserRole);
+
+    // Prevent redirect deadlock if already at target home
+    if (location.pathname === targetHome) {
+      return (
+        <div className="min-h-screen bg-[#060913] text-slate-100 flex items-center justify-center p-6 text-center">
+          <div className="max-w-md p-8 bg-slate-900 border border-red-500/30 rounded-3xl shadow-2xl">
+            <h2 className="text-xl font-bold text-red-400 mb-2">Access Restricted</h2>
+            <p className="text-sm text-slate-400 mb-6">
+              Your account role ({user.role || 'Unknown'}) does not have permission to access this module.
+            </p>
+            <a
+              href="/login"
+              className="inline-block px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold text-sm transition"
+            >
+              Return to Login
+            </a>
+          </div>
+        </div>
+      );
+    }
+
+    return <Navigate to={targetHome} replace />;
   }
 
   return <>{children}</>;
@@ -76,6 +107,7 @@ export const AppRoutes: React.FC = () => {
         element={
           <ProtectedRoute
             allowedRoles={[
+              'SUPER_ADMIN', 'SUPPORT_ADMIN',
               'PKPS_ADMIN', 'SECRETARY', 'MANAGER', 'ACCOUNTANT',
               'LOAN_OFFICER', 'CASHIER', 'STAFF', 'AUDITOR', 'COMMITTEE'
             ]}
@@ -105,7 +137,7 @@ export const AppRoutes: React.FC = () => {
       <Route
         path="/farmer"
         element={
-          <ProtectedRoute allowedRoles={['FARMER']}>
+          <ProtectedRoute allowedRoles={['SUPER_ADMIN', 'SUPPORT_ADMIN', 'FARMER']}>
             <FarmerLayout />
           </ProtectedRoute>
         }

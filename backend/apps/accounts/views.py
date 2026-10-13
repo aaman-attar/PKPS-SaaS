@@ -161,6 +161,8 @@ class FarmerOTPLoginView(APIView):
         refresh = RefreshToken.for_user(user)
         refresh['role'] = user.role
         refresh['tenant_id'] = str(user.tenant.id) if user.tenant else None
+        refresh.access_token['role'] = user.role
+        refresh.access_token['tenant_id'] = str(user.tenant.id) if user.tenant else None
 
         record_audit(user, 'LOGIN_SUCCESS_OTP', 'ACCOUNTS', 'User', user.id)
 
@@ -187,6 +189,8 @@ class RegisterFarmerView(APIView):
         refresh = RefreshToken.for_user(user)
         refresh['role'] = user.role
         refresh['tenant_id'] = str(user.tenant.id) if user.tenant else None
+        refresh.access_token['role'] = user.role
+        refresh.access_token['tenant_id'] = str(user.tenant.id) if user.tenant else None
 
         return Response({
             'message': 'Farmer registration successful! Welcome to PKPS.',
@@ -255,6 +259,8 @@ class LoginView(APIView):
         refresh = RefreshToken.for_user(user)
         refresh['role'] = user.role
         refresh['tenant_id'] = str(user.tenant.id) if user.tenant else None
+        refresh.access_token['role'] = user.role
+        refresh.access_token['tenant_id'] = str(user.tenant.id) if user.tenant else None
 
         record_audit(user, 'LOGIN_SUCCESS', 'ACCOUNTS', 'User', user.id)
 
@@ -323,6 +329,8 @@ class VerifyOTPView(APIView):
         refresh = RefreshToken.for_user(user)
         refresh['role'] = user.role
         refresh['tenant_id'] = str(user.tenant.id) if user.tenant else None
+        refresh.access_token['role'] = user.role
+        refresh.access_token['tenant_id'] = str(user.tenant.id) if user.tenant else None
 
         record_audit(user, 'OTP_VERIFICATION_SUCCESS', 'ACCOUNTS', 'User', user.id)
 

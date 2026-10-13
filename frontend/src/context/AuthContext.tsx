@@ -22,7 +22,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(() => {
     try {
       const saved = localStorage.getItem('user');
-      return saved && saved !== 'undefined' && saved !== 'null' ? JSON.parse(saved) : null;
+      if (saved && saved !== 'undefined' && saved !== 'null') {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.role) parsed.role = String(parsed.role).toUpperCase().trim();
+        return parsed;
+      }
+      return null;
     } catch {
       return null;
     }
@@ -37,7 +42,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (e.key === 'user' || e.key === 'access_token') {
         try {
           const saved = localStorage.getItem('user');
-          setUser(saved && saved !== 'undefined' && saved !== 'null' ? JSON.parse(saved) : null);
+          if (saved && saved !== 'undefined' && saved !== 'null') {
+            const parsed = JSON.parse(saved);
+            if (parsed && parsed.role) parsed.role = String(parsed.role).toUpperCase().trim();
+            setUser(parsed);
+          } else {
+            setUser(null);
+          }
         } catch {
           setUser(null);
         }
@@ -71,6 +82,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           userData = { role: 'SUPER_ADMIN' };
         }
       }
+      if (userData && userData.role) {
+        userData.role = String(userData.role).toUpperCase().trim();
+      }
       if (response.data.access) {
         localStorage.setItem('access_token', response.data.access);
       }
@@ -96,6 +110,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         userData = { role: 'SUPER_ADMIN' };
       }
     }
+    if (userData && userData.role) {
+      userData.role = String(userData.role).toUpperCase().trim();
+    }
     if (response.data.access) {
       localStorage.setItem('access_token', response.data.access);
     }
@@ -120,19 +137,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loginWithOTP = async (mobile: string, otp_code: string) => {
     const response = await api.post('/auth/otp/login/', { mobile, otp_code });
+    let userData = response.data.user;
+    if (userData && userData.role) {
+      userData.role = String(userData.role).toUpperCase().trim();
+    }
     localStorage.setItem('access_token', response.data.access);
     localStorage.setItem('refresh_token', response.data.refresh);
-    localStorage.setItem('user', JSON.stringify(response.data.user));
-    setUser(response.data.user);
+    localStorage.setItem('user', JSON.stringify(userData));
+    setUser(userData);
     return response.data;
   };
 
   const registerFarmer = async (data: any) => {
     const response = await api.post('/auth/register/', data);
+    let userData = response.data.user;
+    if (userData && userData.role) {
+      userData.role = String(userData.role).toUpperCase().trim();
+    }
     localStorage.setItem('access_token', response.data.access);
     localStorage.setItem('refresh_token', response.data.refresh);
-    localStorage.setItem('user', JSON.stringify(response.data.user));
-    setUser(response.data.user);
+    localStorage.setItem('user', JSON.stringify(userData));
+    setUser(userData);
     return response.data;
   };
 
@@ -147,8 +172,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const refreshUser = async () => {
     try {
       const response = await api.get('/auth/profile/');
-      setUser(response.data);
-      localStorage.setItem('user', JSON.stringify(response.data));
+      const userData = response.data;
+      if (userData && userData.role) {
+        userData.role = String(userData.role).toUpperCase().trim();
+      }
+      setUser(userData);
+      localStorage.setItem('user', JSON.stringify(userData));
     } catch (err) {
       logout();
     }
