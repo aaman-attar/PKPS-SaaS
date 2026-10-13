@@ -66,6 +66,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (username: string, password: string) => {
     const response = await api.post('/auth/login/', { username, password });
+    if (typeof response.data === 'string' && (response.data.includes('<!doctype html>') || response.data.includes('<html'))) {
+      throw new Error('API communication error: Received HTML from server instead of JSON API response. Please check API URL.');
+    }
     if (response.data.mfa_required) {
       setMfaRequired(true);
       setMfaUsername(response.data.username);
@@ -105,6 +108,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const verifyOTP = async (username: string, otp_code: string) => {
     const response = await api.post('/auth/verify-otp/', { username, otp_code });
+    if (typeof response.data === 'string' && (response.data.includes('<!doctype html>') || response.data.includes('<html'))) {
+      throw new Error('API communication error: Received HTML from server instead of JSON API response. Please check API URL.');
+    }
     let userData = response.data.user;
     if (!userData && response.data.access) {
       try {

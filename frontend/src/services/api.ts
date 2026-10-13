@@ -1,23 +1,25 @@
 import axios from 'axios';
 
 const resolveApiBaseUrl = (): string => {
-  const envUrl = import.meta.env.VITE_API_BASE_URL;
-  if (envUrl && typeof envUrl === 'string' && envUrl.trim() !== '') {
-    const clean = envUrl.trim().replace(/\/+$/, '');
-    return clean.endsWith('/api/v1') ? clean : `${clean}/api/v1`;
-  }
-
   if (typeof window !== 'undefined' && window.location) {
     const { hostname, protocol } = window.location;
-    // 1. If on Render static site without explicit env set:
-    if (hostname.endsWith('.onrender.com')) {
-      const backendHost = hostname.replace('-frontend', '-backend');
-      return `https://${backendHost}/api/v1`;
+    // 1. If on Render static site (or any onrender domain), always use public backend:
+    if (hostname.includes('onrender.com')) {
+      return 'https://pkps-saas-backend.onrender.com/api/v1';
     }
 
     // 2. If accessed via Local Network IP (e.g. 192.168.159.37):
     if (/^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$/.test(hostname)) {
       return `${protocol}//${hostname}:8000/api/v1`;
+    }
+  }
+
+  const envUrl = import.meta.env.VITE_API_BASE_URL;
+  if (envUrl && typeof envUrl === 'string' && envUrl.trim() !== '') {
+    const clean = envUrl.trim().replace(/\/+$/, '');
+    // Ignore internal Render service hostnames without a public domain
+    if (!clean.includes('pkps-saas-backend/api') || clean.includes('.onrender.com')) {
+      return clean.endsWith('/api/v1') ? clean : `${clean}/api/v1`;
     }
   }
 
