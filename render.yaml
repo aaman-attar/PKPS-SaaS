@@ -17,7 +17,7 @@ services:
       - key: PYTHON_VERSION
         value: 3.11.0
       - key: CORS_ALLOW_ALL_ORIGINS
-        value: "False"
+        value: "True"
       - key: FAST2SMS_ENABLED
         value: "False"
       - key: FAST2SMS_API_KEY

@@ -259,11 +259,11 @@ SIMPLE_JWT = {
 }
 
 # CORS Settings
-CORS_ALLOW_ALL_ORIGINS = os.getenv('CORS_ALLOW_ALL_ORIGINS', 'True' if DEBUG else 'False').lower() in ('true', '1', 't')
+CORS_ALLOW_ALL_ORIGINS = os.getenv('CORS_ALLOW_ALL_ORIGINS', 'True').lower() in ('true', '1', 't')
 CORS_ALLOWED_ORIGINS = [
     origin.strip() for origin in os.getenv(
         'CORS_ALLOWED_ORIGINS',
-        'http://localhost:5173,http://127.0.0.1:5173,http://192.168.159.37:5173'
+        'http://localhost:5173,http://127.0.0.1:5173,http://192.168.159.37:5173,https://pkps-saas-frontend.onrender.com'
     ).split(',') if origin.strip()
 ]
 CORS_ALLOWED_ORIGIN_REGEXES = [
@@ -275,6 +275,25 @@ CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^http:\/\/172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3}(:\d+)?$",
 ]
 CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_METHODS = [
+    'DELETE',
+    'GET',
+    'OPTIONS',
+    'PATCH',
+    'POST',
+    'PUT',
+]
+CORS_ALLOW_HEADERS = [
+    'accept',
+    'accept-encoding',
+    'authorization',
+    'content-type',
+    'dnt',
+    'origin',
+    'user-agent',
+    'x-csrftoken',
+    'x-requested-with',
+]
 
 # Fast2SMS Configuration (India Instant SMS Gateway)
 FAST2SMS_API_KEY = os.getenv('FAST2SMS_API_KEY', '').strip()
